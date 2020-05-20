@@ -7,12 +7,12 @@ typeset -r GSINSTALLPROMPT="Please select a gameserver : "
 typeset -r MSINSTALLPROMPT="Please select a masterserver : "
 #  Loop main menu until user exits explicitly.
 while :; do
-   printf "\nTop-level Menu Title Goes Here\n"
+   printf "\nMain Menu\n"
    PS3=$MAINPROMPT
    OPTIONS=("Install" "Update" "Remove" "Quit")
    select OPTION in "${OPTIONS[@]}"; do
       case $REPLY in # REPLY is set by the select construct, and is the number of the selection.
-      Install)
+      "Install")
          while :; do
             printf "\Install sub-menu\n"
             PS3=$INSTALLPROMPT
@@ -170,7 +170,7 @@ while :; do
          done
          break
          ;;
-      Update) # Update
+      "Update") # Update
          #  Loop Update till user breaks out
          while :; do
             printf "\nmango sub-menu title\n"
@@ -198,7 +198,7 @@ while :; do
          done
          break
          ;;
-      Remove) # Remove
+      "Remove") # Remove
          #  Loop mango menu until user exits explicitly.
          while :; do
             printf "\nmango sub-menu title\n"
@@ -225,7 +225,7 @@ while :; do
          done
          break
          ;;
-      Quit)      # exit
+      "Quit")      # exit
          break 2 #  Break out 2 levels, out of the select and the main loop.
          ;;
       *) # Always code for the unexpected.
