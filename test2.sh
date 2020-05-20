@@ -2,11 +2,11 @@
 
 #  Set select construct prompts for each menu level.
 typeset -r MAINPROMPT="Select a main option: "
-typeset -r MANGOPROMPT="Select mango option: "
-
+typeset -r INSTALLPROMPT="Select an install option: "
+typeset -r GSINSTALLPROMPT="Please select a gameserver top: "
 #  Loop main menu until user exits explicitly.
 while :; do
-   print "\nTop-level Menu Title Goes Here\n"
+   printf "\nTop-level Menu Title Goes Here\n"
    PS3=$MAINPROMPT # PS3 is the prompt for the select construct.
 
    OPTIONS=("Install" "Update" "Remove" "Quit")
@@ -15,39 +15,42 @@ while :; do
       Install)       # mango (has a sub-menu)
          #  Loop mango menu until user exits explicitly.
          while :; do
-            print "\nmango sub-menu title\n"
+            printf "\nmango sub-menu title\n"
             PS3=$MANGOPROMPT
             OPTIONS=("Gameserver" "Masterserver" "Maps" "Mods" "Back" "Quit")
             select OPTION in "${OPTIONS[@]}"; do
-               case $REPLY in
+               case $REPLY2 in
                Gameserver) # add
                   while :; do
-                     print "\nmango sub-menu title\n"
+                     printf "\nmango sub-menu title\n"
                      PS3=$MANGOPROMPT
-                     OPTIONS=("Install" "Update" "Maps" "Mods" "Back" "Quit")
+                     OPTIONS=("Left 4 Dead 2" "Left 4 Dead " "Maps" "Mods" "Back" "Quit")
                      select OPTION in "${OPTIONS[@]}"; do
-                        case $REPLY in
-                        Gameserver) # add
-                           print "\nYou picked [add]"
+                        case $REPLY3 in
+                        "Left 4 Dead 2") # add
+                           printf "\nYou picked [add]"
                            break #  Breaks out of the select, back to the mango loop.
                            ;;
-                        Masterserver) # subtract
-                           print "\nYou picked [subtract]"
+                        "Left 4 Dead") # subtract
+                           printf "\nYou picked [subtract]"
                            break #  Breaks out of the select, back to the mango loop.
                            ;;
-                        Maps) # add
-                           print "\nYou picked [add]"
+                        "Maps") # add
+                           printf "\nYou picked [add]"
                            break #  Breaks out of the select, back to the mango loop.
                            ;;
-                        Mods) # subtract
-                           print "\nYou picked [subtract]"
+                        "Mods") # subtract
+                           printf "\nYou picked [subtract]"
                            break #  Breaks out of the select, back to the mango loop.
                            ;;
-                        Back)      # exit
+                        "Back")      # exit
+                           break 2 # Breaks out 2 levels, the select loop plus the mango while loop, back to the main loop.
+                           ;;
+                        "Quit")      # exit
                            break 2 # Breaks out 2 levels, the select loop plus the mango while loop, back to the main loop.
                            ;;
                         *) # always allow for the unexpected
-                           print "\nUnknown mango operation [${REPLY}]"
+                           printf "\nUnknown mango operation [${REPLY}]"
                            break
                            ;;
                         esac
@@ -56,32 +59,32 @@ while :; do
                   ;;
                Masterserver) # subtract
                   while :; do
-                     print "\nmango sub-menu title\n"
+                     printf "\nmango sub-menu title\n"
                      PS3=$MANGOPROMPT
                      OPTIONS=("Install" "Update" "Maps" "Mods" "Back" "Quit")
                      select OPTION in "${OPTIONS[@]}"; do
                         case $REPLY in
                         Gameserver) # add
-                           print "\nYou picked [add]"
+                           printf "\nYou picked [add]"
                            break #  Breaks out of the select, back to the mango loop.
                            ;;
                         Masterserver) # subtract
-                           print "\nYou picked [subtract]"
+                           printf "\nYou picked [subtract]"
                            break #  Breaks out of the select, back to the mango loop.
                            ;;
                         Maps) # add
-                           print "\nYou picked [add]"
+                           printf "\nYou picked [add]"
                            break #  Breaks out of the select, back to the mango loop.
                            ;;
                         Mods) # subtract
-                           print "\nYou picked [subtract]"
+                           printf "\nYou picked [subtract]"
                            break #  Breaks out of the select, back to the mango loop.
                            ;;
                         Back)      # exit
                            break 2 # Breaks out 2 levels, the select loop plus the mango while loop, back to the main loop.
                            ;;
                         *) # always allow for the unexpected
-                           print "\nUnknown mango operation [${REPLY}]"
+                           printf "\nUnknown mango operation [${REPLY}]"
                            break
                            ;;
                         esac
@@ -90,32 +93,32 @@ while :; do
                   ;;
                Maps) # add
                   while :; do
-                     print "\nmango sub-menu title\n"
+                     printf "\nmango sub-menu title\n"
                      PS3=$MANGOPROMPT
                      OPTIONS=("Install" "Update" "Maps" "Mods" "Back" "Quit")
                      select OPTION in "${OPTIONS[@]}"; do
                         case $REPLY in
                         Gameserver) # add
-                           print "\nYou picked [add]"
+                           printf "\nYou picked [add]"
                            break #  Breaks out of the select, back to the mango loop.
                            ;;
                         Masterserver) # subtract
-                           print "\nYou picked [subtract]"
+                           printf "\nYou picked [subtract]"
                            break #  Breaks out of the select, back to the mango loop.
                            ;;
                         Maps) # add
-                           print "\nYou picked [add]"
+                           printf "\nYou picked [add]"
                            break #  Breaks out of the select, back to the mango loop.
                            ;;
                         Mods) # subtract
-                           print "\nYou picked [subtract]"
+                           printf "\nYou picked [subtract]"
                            break #  Breaks out of the select, back to the mango loop.
                            ;;
                         Back)      # exit
                            break 2 # Breaks out 2 levels, the select loop plus the mango while loop, back to the main loop.
                            ;;
                         *) # always allow for the unexpected
-                           print "\nUnknown mango operation [${REPLY}]"
+                           printf "\nUnknown mango operation [${REPLY}]"
                            break
                            ;;
                         esac
@@ -124,32 +127,32 @@ while :; do
                   ;;
                Mods) # subtract
                   while :; do
-                     print "\nmango sub-menu title\n"
+                     printf "\nmango sub-menu title\n"
                      PS3=$MANGOPROMPT
                      OPTIONS=("Install" "Update" "Maps" "Mods" "Back" "Quit")
                      select OPTION in "${OPTIONS[@]}"; do
                         case $REPLY in
                         Gameserver) # add
-                           print "\nYou picked [add]"
+                           printf "\nYou picked [add]"
                            break #  Breaks out of the select, back to the mango loop.
                            ;;
                         Masterserver) # subtract
-                           print "\nYou picked [subtract]"
+                           printf "\nYou picked [subtract]"
                            break #  Breaks out of the select, back to the mango loop.
                            ;;
                         Maps) # add
-                           print "\nYou picked [add]"
+                           printf "\nYou picked [add]"
                            break #  Breaks out of the select, back to the mango loop.
                            ;;
                         Mods) # subtract
-                           print "\nYou picked [subtract]"
+                           printf "\nYou picked [subtract]"
                            break #  Breaks out of the select, back to the mango loop.
                            ;;
                         Back)      # exit
                            break 2 # Breaks out 2 levels, the select loop plus the mango while loop, back to the main loop.
                            ;;
                         *) # always allow for the unexpected
-                           print "\nUnknown mango operation [${REPLY}]"
+                           printf "\nUnknown mango operation [${REPLY}]"
                            break
                            ;;
                         esac
@@ -160,7 +163,7 @@ while :; do
                   break 2 # Breaks out 2 levels, the select loop plus the mango while loop, back to the main loop.
                   ;;
                *) # always allow for the unexpected
-                  print "\nUnknown mango operation [${REPLY}]"
+                  printf "\nUnknown mango operation [${REPLY}]"
                   break
                   ;;
                esac
@@ -171,24 +174,24 @@ while :; do
       Update) # Update
          #  Loop Update till user breaks out
          while :; do
-            print "\nmango sub-menu title\n"
+            printf "\nmango sub-menu title\n"
             PS3=$MANGOPROMPT
             OPTIONS=("Install" "Update" "Remove" "Quit")
             select OPTION in "${OPTIONS[@]}"; do
                case $REPLY in
                1) # add
-                  print "\nYou picked [add]"
+                  printf "\nYou picked [add]"
                   break #  Breaks out of the select, back to the mango loop.
                   ;;
                2) # subtract
-                  print "\nYou picked [subtract]"
+                  printf "\nYou picked [subtract]"
                   break #  Breaks out of the select, back to the mango loop.
                   ;;
                3)         # exit
                   break 2 # Breaks out 2 levels, the select loop plus the mango while loop, back to the main loop.
                   ;;
                *) # always allow for the unexpected
-                  print "\nUnknown mango operation [${REPLY}]"
+                  printf "\nUnknown mango operation [${REPLY}]"
                   break
                   ;;
                esac
@@ -199,23 +202,23 @@ while :; do
       Remove) # Remove
          #  Loop mango menu until user exits explicitly.
          while :; do
-            print "\nmango sub-menu title\n"
+            printf "\nmango sub-menu title\n"
             PS3=$MANGOPROMPT
             select option1 in add substract exit; do
                case $REPLY in
                1) # add
-                  print "\nYou picked [add]"
+                  printf "\nYou picked [add]"
                   break #  Breaks out of the select, back to the mango loop.
                   ;;
                2) # subtract
-                  print "\nYou picked [subtract]"
+                  printf "\nYou picked [subtract]"
                   break #  Breaks out of the select, back to the mango loop.
                   ;;
                3)         # exit
                   break 2 # Breaks out 2 levels, the select loop plus the mango while loop, back to the main loop.
                   ;;
                *) # always allow for the unexpected
-                  print "\nUnknown mango operation [${REPLY}]"
+                  printf "\nUnknown mango operation [${REPLY}]"
                   break
                   ;;
                esac
@@ -227,7 +230,7 @@ while :; do
          break 2 #  Break out 2 levels, out of the select and the main loop.
          ;;
       *) # Always code for the unexpected.
-         print "\nUnknown option [${REPLY}]"
+         printf "\nUnknown option [${REPLY}]"
          break
          ;;
       esac
