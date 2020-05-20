@@ -1,29 +1,28 @@
-#!/usr/bin/ksh
+#!/bin/bash
 
 #  Set select construct prompts for each menu level.
 typeset -r MAINPROMPT="Select a main option: "
 typeset -r INSTALLPROMPT="Select an install option: "
-typeset -r GSINSTALLPROMPT="Please select a gameserver top: "
+typeset -r GSINSTALLPROMPT="Please select a gameserver : "
+typeset -r MSINSTALLPROMPT="Please select a masterserver : "
 #  Loop main menu until user exits explicitly.
 while :; do
    printf "\nTop-level Menu Title Goes Here\n"
-   PS3=$MAINPROMPT # PS3 is the prompt for the select construct.
-
+   PS3=$MAINPROMPT
    OPTIONS=("Install" "Update" "Remove" "Quit")
    select OPTION in "${OPTIONS[@]}"; do
       case $REPLY in # REPLY is set by the select construct, and is the number of the selection.
-      Install)       # mango (has a sub-menu)
-         #  Loop mango menu until user exits explicitly.
+      Install)
          while :; do
-            printf "\nmango sub-menu title\n"
-            PS3=$MANGOPROMPT
+            printf "\Install sub-menu\n"
+            PS3=$INSTALLPROMPT
             OPTIONS=("Gameserver" "Masterserver" "Maps" "Mods" "Back" "Quit")
             select OPTION in "${OPTIONS[@]}"; do
-               case $REPLY2 in
+               case $REPLY in
                Gameserver) # add
                   while :; do
                      printf "\nmango sub-menu title\n"
-                     PS3=$MANGOPROMPT
+                     PS3=$GSINSTALLPROMPT
                      OPTIONS=("Left 4 Dead 2" "Left 4 Dead " "Maps" "Mods" "Back" "Quit")
                      select OPTION in "${OPTIONS[@]}"; do
                         case $REPLY3 in
@@ -43,10 +42,10 @@ while :; do
                            printf "\nYou picked [subtract]"
                            break #  Breaks out of the select, back to the mango loop.
                            ;;
-                        "Back")      # exit
+                        "Back")    # exit
                            break 2 # Breaks out 2 levels, the select loop plus the mango while loop, back to the main loop.
                            ;;
-                        "Quit")      # exit
+                        "Quit")    # exit
                            break 2 # Breaks out 2 levels, the select loop plus the mango while loop, back to the main loop.
                            ;;
                         *) # always allow for the unexpected
@@ -60,11 +59,11 @@ while :; do
                Masterserver) # subtract
                   while :; do
                      printf "\nmango sub-menu title\n"
-                     PS3=$MANGOPROMPT
+                     PS3=$MSINSTALLPROMPT
                      OPTIONS=("Install" "Update" "Maps" "Mods" "Back" "Quit")
                      select OPTION in "${OPTIONS[@]}"; do
                         case $REPLY in
-                        Gameserver) # add
+                        "Left $ Dead 2") # add
                            printf "\nYou picked [add]"
                            break #  Breaks out of the select, back to the mango loop.
                            ;;
@@ -204,7 +203,7 @@ while :; do
          while :; do
             printf "\nmango sub-menu title\n"
             PS3=$MANGOPROMPT
-            select option1 in add substract exit; do
+            select option in add substract exit; do
                case $REPLY in
                1) # add
                   printf "\nYou picked [add]"
@@ -238,4 +237,3 @@ while :; do
 done
 
 exit 0
-$
