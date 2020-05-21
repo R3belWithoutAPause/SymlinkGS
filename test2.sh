@@ -131,7 +131,7 @@ while :; do
                      printf "\nmango sub-menu title\n"
                      PS3=$MANGOPROMPT
                      OPTIONS=("Install" "Update" "Maps" "Mods" "Back" "Quit")
-                     select OPTION in "${OPTIONS[@]}"; do
+                     select OPTION in ${OPTIONS[@]}; do
                         case $REPLY in
                         Gameserver) # add
                            printf "\nYou picked [add]"

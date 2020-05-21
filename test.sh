@@ -26,6 +26,63 @@ function errorAndExit() {
     exit 0
 }
 
+function createGS() {
+    #    echo $GAME
+    #    echo $PORT
+    #    echo $MAP
+    #    echo $CLIENTPORT
+
+    ## Check whether the folder exists
+    if [ -d "$GS_DIR" ]; then
+        if [ -L "$GS_DIR" ]; then
+            # It is a symlink!
+            # Symbolic link specific commands go here.
+            echo "Symlinked directory exists !! ... Removing!"
+            rm -R "$GS_DIR"
+        else
+            # It's a directory!
+            # Directory command goes here.
+            echo "Directory Exists"
+            rm -R "$GS_DIR"
+            mkdir -p "$GS_DIR"
+        fi
+    fi
+
+    echo "We are about to create a gameserver for: $GAME"
+    echo "Server will be running on port: $PORT"
+    echo "Server will be running on Clientport: $CLIENTPORT"
+    echo "Server will be running map: $MAP"
+
+    #INSTALL_DIR="/home/servers/servers/left4dead"
+    #GS_DIR=$GS_DIR
+    #MASTER_DIR="/home/servers/master/left4dead2"
+
+    cp -rsa $MASTER_DIR/* "$GS_DIR"
+    unlink "$GS_DIR"/srcds_run
+    unlink "$GS_DIR"/control.sh
+    unlink "$GS_DIR"/$GAMETYPE/host.txt
+    unlink "$GS_DIR"/$GAMETYPE/modelsounds.cache
+    unlink "$GS_DIR"/$GAMETYPE/motd.txt
+    unlink "$GS_DIR"/$GAMETYPE/scene.cache
+    if [ $GAME = "L4D2" ]; then
+        unlink "$GS_DIR"/$GAMETYPE/cfg/addonconfig.cfg
+    fi
+    unlink "$GS_DIR"/$GAMETYPE/cfg/server.cfg
+    unlink "$GS_DIR"/$GAMETYPE/cfg/autoexec.cfg
+    cp $MASTER_DIR/srcds_run "$GS_DIR"
+    cp $MASTER_DIR/control.sh "$GS_DIR"
+    cp $MASTER_DIR/$GAMETYPE/host.txt "$GS_DIR"/$GAMETYPE
+    cp $MASTER_DIR/$GAMETYPE/modelsounds.cache "$GS_DIR"/$GAMETYPE
+    cp $MASTER_DIR/$GAMETYPE/motd.txt "$GS_DIR"/$GAMETYPE
+    cp $MASTER_DIR/$GAMETYPE/scene.cache "$GS_DIR"/$GAMETYPE
+    if [ $GAME = "L4D2" ]; then
+        cp $MASTER_DIR/$GAMETYPE/cfg/addonconfig.cfg "$GS_DIR"/$GAMETYPE/cfg
+    fi
+    cp $MASTER_DIR/$GAMETYPE/cfg/server.cfg "$GS_DIR"/$GAMETYPE/cfg
+    cp $MASTER_DIR/$GAMETYPE/cfg/autoexec.cfg "$GS_DIR"/$GAMETYPE/cfg
+    exit 0
+}
+
 function getTask() {
 
     ## First lets find out what the user wants to do
@@ -339,62 +396,6 @@ function msTasks() {
 
 }
 
-function createGS() {
-    #    echo $GAME
-    #    echo $PORT
-    #    echo $MAP
-    #    echo $CLIENTPORT
-
-    ## Check whether the folder exists
-    if [ -d "$GS_DIR" ]; then
-        if [ -L "$GS_DIR" ]; then
-            # It is a symlink!
-            # Symbolic link specific commands go here.
-            echo "Symlinked directory exists !! ... Removing!"
-            rm -R "$GS_DIR"
-        else
-            # It's a directory!
-            # Directory command goes here.
-            echo "Directory Exists"
-            rm -R "$GS_DIR"
-            mkdir -p "$GS_DIR"
-        fi
-    fi
-
-    echo "We are about to create a gameserver for: $GAME"
-    echo "Server will be running on port: $PORT"
-    echo "Server will be running on Clientport: $CLIENTPORT"
-    echo "Server will be running map: $MAP"
-
-    #INSTALL_DIR="/home/servers/servers/left4dead"
-    #GS_DIR=$GS_DIR
-    #MASTER_DIR="/home/servers/master/left4dead2"
-
-    cp -rsa $MASTER_DIR/* "$GS_DIR"
-    unlink "$GS_DIR"/srcds_run
-    unlink "$GS_DIR"/control.sh
-    unlink "$GS_DIR"/$GAMETYPE/host.txt
-    unlink "$GS_DIR"/$GAMETYPE/modelsounds.cache
-    unlink "$GS_DIR"/$GAMETYPE/motd.txt
-    unlink "$GS_DIR"/$GAMETYPE/scene.cache
-    if [ $GAME = "L4D2" ]; then
-        unlink "$GS_DIR"/$GAMETYPE/cfg/addonconfig.cfg
-    fi
-    unlink "$GS_DIR"/$GAMETYPE/cfg/server.cfg
-    unlink "$GS_DIR"/$GAMETYPE/cfg/autoexec.cfg
-    cp $MASTER_DIR/srcds_run "$GS_DIR"
-    cp $MASTER_DIR/control.sh "$GS_DIR"
-    cp $MASTER_DIR/$GAMETYPE/host.txt "$GS_DIR"/$GAMETYPE
-    cp $MASTER_DIR/$GAMETYPE/modelsounds.cache "$GS_DIR"/$GAMETYPE
-    cp $MASTER_DIR/$GAMETYPE/motd.txt "$GS_DIR"/$GAMETYPE
-    cp $MASTER_DIR/$GAMETYPE/scene.cache "$GS_DIR"/$GAMETYPE
-    if [ $GAME = "L4D2" ]; then
-        cp $MASTER_DIR/$GAMETYPE/cfg/addonconfig.cfg "$GS_DIR"/$GAMETYPE/cfg
-    fi
-    cp $MASTER_DIR/$GAMETYPE/cfg/server.cfg "$GS_DIR"/$GAMETYPE/cfg
-    cp $MASTER_DIR/$GAMETYPE/cfg/autoexec.cfg "$GS_DIR"/$GAMETYPE/cfg
-    exit 0
-}
 
 function masterServer() {
 
