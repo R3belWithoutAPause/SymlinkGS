@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 #  Set select construct prompts for each menu level.
 typeset -r MAINPROMPT="Select a main option: "
 typeset -r INSTALLPROMPT="Select an install option: "
@@ -9,23 +11,23 @@ typeset -r MSINSTALLPROMPT="Please select a masterserver : "
 while :; do
    printf "\nMain Menu\n"
    PS3=$MAINPROMPT
-   OPTIONS=("Install" "Update" "Remove" "Quit")
+   #OPTIONS=("Install" "Update" "Remove" "Quit")
    select OPTION in "${OPTIONS[@]}"; do
       case $REPLY in # REPLY is set by the select construct, and is the number of the selection.
-      "Install")
+      1)
          while :; do
             printf "\Install sub-menu\n"
             PS3=$INSTALLPROMPT
-            OPTIONS=("Gameserver" "Masterserver" "Maps" "Mods" "Back" "Quit")
+            #OPTIONS=("Gameserver" "Masterserver" "Maps" "Mods" "Back" "Quit")
             select OPTION in "${OPTIONS[@]}"; do
                case $REPLY in
                Gameserver) # add
                   while :; do
                      printf "\nmango sub-menu title\n"
                      PS3=$GSINSTALLPROMPT
-                     OPTIONS=("Left 4 Dead 2" "Left 4 Dead " "Maps" "Mods" "Back" "Quit")
+                     #OPTIONS=("Left 4 Dead 2" "Left 4 Dead " "Maps" "Mods" "Back" "Quit")
                      select OPTION in "${OPTIONS[@]}"; do
-                        case $REPLY3 in
+                        case $REPLY in
                         "Left 4 Dead 2") # add
                            printf "\nYou picked [add]"
                            break #  Breaks out of the select, back to the mango loop.
@@ -170,7 +172,7 @@ while :; do
          done
          break
          ;;
-      "Update") # Update
+      2) # Update
          #  Loop Update till user breaks out
          while :; do
             printf "\nmango sub-menu title\n"
@@ -198,7 +200,7 @@ while :; do
          done
          break
          ;;
-      "Remove") # Remove
+      3) # Remove
          #  Loop mango menu until user exits explicitly.
          while :; do
             printf "\nmango sub-menu title\n"
@@ -225,7 +227,7 @@ while :; do
          done
          break
          ;;
-      "Quit")      # exit
+      4)      # exit
          break 2 #  Break out 2 levels, out of the select and the main loop.
          ;;
       *) # Always code for the unexpected.
