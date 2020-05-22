@@ -168,33 +168,32 @@ function getTask() {
                 *) errorAndContinue ;;
                 esac
             done
+            echo ""
             if [ "$OPTION" == "Left 4 Dead 2" ]; then
                 ## Lets see if theres are any L4D2 servers installed already
                 GS_DIR="/home/servers/servers/left4dead2/$FOLDER"
                 INSTALL_DIR="/home/servers/servers/left4dead2"
                 FOLDERS=$(find $INSTALL_DIR -maxdepth 1 -type d | cut -d"/" -f6-)
-                PS3="Which server(s) would you like to Remove?: "
+                PS3="Choose a port?: "
                 select FOLDER in ${FOLDERS} "All" "Quit"; do
                     #echo "${FOLDER}"
                     #echo $FOLDERS
                     break
                 done
 
-                if
-                    [ $FOLDER != "" ] || [ $FOLDERS != "" ]
-                then
-                    echo " It appears you already have servers installed"
-                else
-
-                    readarray -t L4D2_PORTS < <(seq 27015 1 27035)
-                    select PORT in ${L4D2_PORTS[@]}; do
-                        break
-                    done
+                readarray -t L4D2_PORTS < <(seq 27015 1 27035)
+                select PORT in "${L4D2_PORTS[@]}"; do
+                    break
+                done
+                if [ "$PORT" == "$FOLDERS" ]; then
+                    echo "Server already exists"
+                    echo " Please choose another port"
+                    return
                 fi
 
-                echo $PORT
-                echo $FOLDER
-                echo $FOLDERS
+                echo "$PORT"
+                echo "$FOLDER"
+                echo "$FOLDERS"
 
                 GAME="L4D2"
                 MS_DIR="/home/servers/master/left4dead2"
@@ -212,15 +211,19 @@ function getTask() {
                     break
                 done
 
-                if [ $FOLDER != "" ] || [ $FOLDERS != "" ]; then
+                if [ "$FOLDER" != "" ] || [ "$FOLDERS" != "" ]; then
                     echo " It appears you already have servers installed"
                 else
 
-                    readarray -t L4D2_PORTS < <(seq 27015 1 27035)
-                    select PORT in ${L4D2_PORTS[@]}; do
+                    readarray -t L4D_PORTS < <(seq 28015 1 28035)
+                    select PORT in "${L4D_PORTS[@]}"; do
                         break
                     done
                 fi
+
+                echo "$PORT"
+                echo "$FOLDER"
+                echo "$FOLDERS"
 
                 GAME="L4D2"
                 MS_DIR="/home/servers/master/left4dead2"
@@ -255,8 +258,8 @@ function getTask() {
     ###**********************************************###
     ###******** THIS IS THE UPDATE SECTION *********###
     ## lets find out what the user wants to update
-    if [ "$OPTION" == "Install" ]; then
-        ACTION="INSTALL"
+    if [ "$OPTION" == "Update" ]; then
+        ACTION="UPDATE"
         OPTIONS=("Gameserver" "Masterserver" "Mods" "Maps" "Quit")
         select OPTION in "${OPTIONS[@]}"; do
             case "$REPLY" in

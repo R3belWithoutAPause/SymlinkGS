@@ -32,47 +32,47 @@
 #    Sie sollten eine Kopie der GNU General Public License zusammen mit diesem
 #    Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
 
-function greenMessage {
+function greenMessage() {
     echo -e "\\033[32;1m${@}\033[0m"
 }
 
-function cyanMessage {
+function cyanMessage() {
     echo -e "\\033[36;1m${@}\033[0m"
 }
 
-function redMessage {
+function redMessage() {
     echo -e "\\033[31;1m${@}\033[0m"
 }
 
-function yellowMessage {
-	echo -e "\\033[33;1m${@}\033[0m"
+function yellowMessage() {
+    echo -e "\\033[33;1m${@}\033[0m"
 }
 
-function errorAndQuit {
+function errorAndQuit() {
     errorAndExit "Exit now!"
 }
 
-function errorAndExit {
+function errorAndExit() {
     redMessage ${@}
     exit 0
 }
 
-function errorAndContinue {
+function errorAndContinue() {
     redMessage "Invalid option."
     continue
 }
 
-function removeIfExists {
+function removeIfExists() {
     if [ "$1" != "" -a -f "$1" ]; then
         rm -f $1
     fi
 }
 
-function runSpinner {
+function runSpinner() {
 
     SPINNER=("-" "\\" "|" "/")
 
-    for SEQUENCE in `seq 1 $1`; do
+    for SEQUENCE in $(seq 1 $1); do
         for I in "${SPINNER[@]}"; do
             echo -ne "\b$I"
             sleep 0.1
@@ -80,25 +80,25 @@ function runSpinner {
     done
 }
 
-function okAndSleep {
+function okAndSleep() {
     greenMessage $1
     sleep 1
 }
 
-function makeDir {
+function makeDir() {
     if [ "$1" != "" -a ! -d $1 ]; then
         mkdir -p $1
     fi
 }
 
-function backUpFile {
+function backUpFile() {
     if [ ! -f "$1.easy-install.backup" ]; then
         cp "$1" "$1.easy-install.backup"
     fi
 }
 
-function checkInstall {
-    if [ "`dpkg-query -s $1 2>/dev/null`" == "" ]; then
+function checkInstall() {
+    if [ "$(dpkg-query -s $1 2>/dev/null)" == "" ]; then
         okAndSleep "Installing package $1"
         apt-get install -y $1
     fi
@@ -106,35 +106,37 @@ function checkInstall {
 
 INSTALLER_VERSION="2.3"
 OS=""
-USERADD=`which useradd`
-USERMOD=`which usermod`
-USERDEL=`which userdel`
-GROUPADD=`which groupadd`
-MACHINE=`uname -m`
-LOCAL_IP=`ip route get 8.8.8.8 | awk '{print $NF; exit}'`
+CURL=$(which curl)
+PKILL=$(which pkill)
+USERADD=$(which useradd)
+USERMOD=$(which usermod)
+USERDEL=$(which userdel)
+GROUPADD=$(which groupadd)
+MACHINE=$(uname -m)
+LOCAL_IP=$(ip route get 8.8.8.8 | awk '{print $NF; exit}')
 
 if [ "$LOCAL_IP" == "" ]; then
-    HOST_NAME=`hostname -f | awk '{print tolower($0)}'`
+    HOST_NAME=$(hostname -f | awk '{print tolower($0)}')
 else
-    HOST_NAME=`getent hosts $LOCAL_IP | awk '{print tolower($2)}' | head -n 1`
+    HOST_NAME=$(getent hosts $LOCAL_IP | awk '{print tolower($2)}' | head -n 1)
 fi
 
 cyanMessage "Checking for the latest latest installer"
-LATEST_VERSION=`wget -q --timeout=60 -O - https://api.github.com/repos/easy-wi/installer/releases/latest | grep -Po '(?<="tag_name": ")([0-9]\.[0-9]+)'`
+LATEST_VERSION=$(wget -q --timeout=60 -O - https://api.github.com/repos/easy-wi/installer/releases/latest | grep -Po '(?<="tag_name": ")([0-9]\.[0-9]+)')
 
-if [ "`printf "${LATEST_VERSION}\n${INSTALLER_VERSION}" | sort -V | tail -n 1`" != "$INSTALLER_VERSION" ]; then
+if [ "$(printf "${LATEST_VERSION}\n${INSTALLER_VERSION}" | sort -V | tail -n 1)" != "$INSTALLER_VERSION" ]; then
     errorAndExit "You are using the old version ${INSTALLER_VERSION}. Please upgrade to version ${LATEST_VERSION} and retry."
 else
     okAndSleep "You are using the up to date version ${INSTALLER_VERSION}."
 fi
 
 # We need to be root to install and update
-if [ "`id -u`" != "0" ]; then
+if [ "$(id -u)" != "0" ]; then
     cyanMessage "Change to root account required"
     su -
 fi
 
-if [ "`id -u`" != "0" ]; then
+if [ "$(id -u)" != "0" ]; then
     errorAndExit "Still not root, aborting"
 fi
 
@@ -147,9 +149,9 @@ if [ -f /etc/debian_version ]; then
     OPTIONS=("Yes" "Quit")
     select UPDATE_UPGRADE_SYSTEM in "${OPTIONS[@]}"; do
         case "$REPLY" in
-            1 ) break;;
-            2 ) errorAndQuit;;
-            *) errorAndContinue;;
+        1) break ;;
+        2) errorAndQuit ;;
+        *) errorAndContinue ;;
         esac
     done
 
@@ -159,9 +161,34 @@ if [ -f /etc/debian_version ]; then
     checkInstall debconf-utils
     checkInstall lsb-release
 
-    OS=`lsb_release -i 2> /dev/null | grep 'Distributor' | awk '{print tolower($3)}'`
-    OSVERSION=`lsb_release -r 2> /dev/null | grep 'Release' | awk '{print $2}'`
-    OSBRANCH=`lsb_release -c 2> /dev/null | grep 'Codename' | awk '{print $2}'`
+    OS=$(lsb_release -i 2>/dev/null | grep 'Distributor' | awk '{print tolower($3)}')
+    OSVERSION=$(lsb_release -r 2>/dev/null | grep 'Release' | awk '{print $2}')
+    OSBRANCH=$(lsb_release -c 2>/dev/null | grep 'Codename' | awk '{print $2}')
+
+# Slackware stores it's version at /etc/slackware-version
+elif [ -f /etc/slackware-version ]; then
+
+    #cyanMessage " "
+    #okAndSleep "Update the system packages to the latest version? Required, as otherwise dependencies might brake!"
+
+    #OPTIONS=("Yes" "Quit")
+    #select UPDATE_UPGRADE_SYSTEM in "${OPTIONS[@]}"; do
+    #    case "$REPLY" in
+    #        1 ) break;;
+    #        2 ) errorAndQuit;;
+    #        *) errorAndContinue;;
+    #    esac
+    #done
+
+    #apt-get update && apt-get upgrade -y && apt-get dist-upgrade -y
+
+    #checkInstall curl
+    #checkInstall debconf-utils
+    #checkInstall lsb-release
+
+    OS=$(grep '^NAME=' /etc/os-release | cut -d '=' -f 2 | sed 's/"//g')
+    OSVERSION=$(grep '^VERSION=' /etc/os-release | cut -d '=' -f 2 | sed 's/"//g')
+    #OSBRANCH=$(grep '^VERSION=' /etc/os-release | cut -d '=' -f 2 | sed 's/"//g')
 fi
 
 if [ "$OS" == "" ]; then
@@ -170,11 +197,11 @@ else
     okAndSleep "Detected OS $OS"
 fi
 
-if [ "$OSBRANCH" == "" ]; then
-    errorAndExit "Error: Could not detect branch of OS. Aborting"
-else
-    okAndSleep "Detected branch $OSBRANCH"
-fi
+# if [ "$OSBRANCH" == "" ]; then
+#     errorAndExit "Error: Could not detect branch of OS. Aborting"
+# else
+#     okAndSleep "Detected branch $OSBRANCH"
+# fi
 
 cyanMessage " "
 cyanMessage "What shall be installed/prepared?"
@@ -182,9 +209,9 @@ cyanMessage "What shall be installed/prepared?"
 OPTIONS=("Gameserver Root" "Voicemaster" "Easy-WI Webpanel" "Webspace Root" "MySQL" "Quit")
 select OPTION in "${OPTIONS[@]}"; do
     case "$REPLY" in
-        1|2|3|4|5 ) break;;
-        6 ) errorAndQuit;;
-        *) errorAndContinue;;
+    1 | 2 | 3 | 4 | 5) break ;;
+    6) errorAndQuit ;;
+    *) errorAndContinue ;;
     esac
 done
 
@@ -202,164 +229,164 @@ fi
 
 OTHER_PANEL=""
 
-if [ "$INSTALL" != "VS" ]; then
-    if [ -f /etc/init.d/psa ]; then
-        OTHER_PANEL="Plesk"
-    elif [ -f /usr/local/vesta/bin/v-change-user-password ]; then
-        OTHER_PANEL="VestaCP"
-    elif [ -d /root/confixx ]; then
-        OTHER_PANEL="Confixx"
-    elif [ -d /var/www/froxlor ]; then
-        OTHER_PANEL="Froxlor"
-    elif [ -d /etc/imscp ]; then
-        OTHER_PANEL="i-MSCP"
-    elif [ -d /usr/local/ispconfig ]; then
-        OTHER_PANEL="ISPConfig"
-    elif [ -d /var/cpanel ]; then
-        OTHER_PANEL="cPanel"
-    elif [ -d /usr/local/directadmin ]; then
-        OTHER_PANEL="DirectAdmin"
-    fi
-fi
+# if [ "$INSTALL" != "VS" ]; then
+#     if [ -f /etc/init.d/psa ]; then
+#         OTHER_PANEL="Plesk"
+#     elif [ -f /usr/local/vesta/bin/v-change-user-password ]; then
+#         OTHER_PANEL="VestaCP"
+#     elif [ -d /root/confixx ]; then
+#         OTHER_PANEL="Confixx"
+#     elif [ -d /var/www/froxlor ]; then
+#         OTHER_PANEL="Froxlor"
+#     elif [ -d /etc/imscp ]; then
+#         OTHER_PANEL="i-MSCP"
+#     elif [ -d /usr/local/ispconfig ]; then
+#         OTHER_PANEL="ISPConfig"
+#     elif [ -d /var/cpanel ]; then
+#         OTHER_PANEL="cPanel"
+#     elif [ -d /usr/local/directadmin ]; then
+#         OTHER_PANEL="DirectAdmin"
+#     fi
+# fi
 
-if [ "$OTHER_PANEL" != "" ]; then
-    if [ "$INSTALL" == "GS" ]; then
-        yellowMessage " "
-        yellowMessage "Warning an installation of the control panel $OTHER_PANEL has been detected."
-        yellowMessage "If you continue the installer might end up breaking $OTHER_PANEL or same parts of Easy-WI might not work."
-        OPTIONS=("Continue" "Quit")
-        select UPDATE_UPGRADE_SYSTEM in "${OPTIONS[@]}"; do
-            case "$REPLY" in
-                1 ) break;;
-                2 ) errorAndQuit;;
-                *) errorAndContinue;;
-            esac
-        done
-    else
-        errorAndExit "Aborting as the risk of breaking the installed panel $OTHER_PANEL is too high."
-    fi
-fi
+# if [ "$OTHER_PANEL" != "" ]; then
+#     if [ "$INSTALL" == "GS" ]; then
+#         yellowMessage " "
+#         yellowMessage "Warning an installation of the control panel $OTHER_PANEL has been detected."
+#         yellowMessage "If you continue the installer might end up breaking $OTHER_PANEL or same parts of Easy-WI might not work."
+#         OPTIONS=("Continue" "Quit")
+#         select UPDATE_UPGRADE_SYSTEM in "${OPTIONS[@]}"; do
+#             case "$REPLY" in
+#                 1 ) break;;
+#                 2 ) errorAndQuit;;
+#                 *) errorAndContinue;;
+#             esac
+#         done
+#     else
+#         errorAndExit "Aborting as the risk of breaking the installed panel $OTHER_PANEL is too high."
+#     fi
+# fi
 
 # Run the domain/IP check up front to avoid late error out.
-if [ "$INSTALL" == "EW" ]; then
+# if [ "$INSTALL" == "EW" ]; then
 
-    cyanMessage " "
-    cyanMessage "At which URL/Domain should Easy-Wi be placed?"
-    OPTIONS=("$HOST_NAME" "$LOCAL_IP" "Other" "Quit")
-    select OPTION in "${OPTIONS[@]}"; do
-        case "$REPLY" in
-            1|2|3 ) break;;
-            4 ) errorAndQuit;;
-            *) errorAndContinue;;
-        esac
-    done
+#     cyanMessage " "
+#     cyanMessage "At which URL/Domain should Easy-Wi be placed?"
+#     OPTIONS=("$HOST_NAME" "$LOCAL_IP" "Other" "Quit")
+#     select OPTION in "${OPTIONS[@]}"; do
+#         case "$REPLY" in
+#             1|2|3 ) break;;
+#             4 ) errorAndQuit;;
+#             *) errorAndContinue;;
+#         esac
+#     done
 
-    if [ "$OPTION" == "Other" ]; then
-        cyanMessage " "
-        cyanMessage "Please specify the IP or domain Easy-Wi should run at."
-        read IP_DOMAIN
-    else
-        IP_DOMAIN=$OPTION
-    fi
+#     if [ "$OPTION" == "Other" ]; then
+#         cyanMessage " "
+#         cyanMessage "Please specify the IP or domain Easy-Wi should run at."
+#         read IP_DOMAIN
+#     else
+#         IP_DOMAIN=$OPTION
+#     fi
 
-    if [ "`grep -E '\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b' <<< $IP_DOMAIN`" == "" -a "`grep -E '^(([a-zA-Z](-?[a-zA-Z0-9])*)\.)*[a-zA-Z](-?[a-zA-Z0-9])+\.[a-zA-Z]{2,}$' <<< $IP_DOMAIN`" == "" ]; then
-        errorAndExit "Error: $IP_DOMAIN is neither a domain nor an IPv4 address!"
-    fi
+#     if [ "`grep -E '\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b' <<< $IP_DOMAIN`" == "" -a "`grep -E '^(([a-zA-Z](-?[a-zA-Z0-9])*)\.)*[a-zA-Z](-?[a-zA-Z0-9])+\.[a-zA-Z]{2,}$' <<< $IP_DOMAIN`" == "" ]; then
+#         errorAndExit "Error: $IP_DOMAIN is neither a domain nor an IPv4 address!"
+#     fi
 
-    FILE_NAME=${IP_DOMAIN//./_}
+#     FILE_NAME=${IP_DOMAIN//./_}
 
-    cyanMessage " "
-    cyanMessage "Install stable or latest developer version?"
+#     cyanMessage " "
+#     cyanMessage "Install stable or latest developer version?"
 
-    OPTIONS=("Stable" "Developer" "Quit")
-    select OPTION in "${OPTIONS[@]}"; do
-        case "$REPLY" in
-            1|2 ) break;;
-            3 ) errorAndQuit;;
-            *) errorAndContinue;;
-        esac
-    done
+#     OPTIONS=("Stable" "Developer" "Quit")
+#     select OPTION in "${OPTIONS[@]}"; do
+#         case "$REPLY" in
+#             1|2 ) break;;
+#             3 ) errorAndQuit;;
+#             *) errorAndContinue;;
+#         esac
+#     done
 
-    RELEASE_TYPE=$OPTION
-fi
+#     RELEASE_TYPE=$OPTION
+# fi
 
 # Run the TS3 server version detect up front to avoid user executing steps first and fail at download last.
-if [ "$INSTALL" == "VS" ]; then
+# if [ "$INSTALL" == "VS" ]; then
 
-    if [ "$MACHINE" == "x86_64" ]; then
-        ARCH="amd64"
-    elif [ "$MACHINE" == "i386" ]||[ "$MACHINE" == "i686" ]; then
-        ARCH="x86"
-    else
-        errorAndExit "$MACHINE is not supported!"
-    fi
+#     if [ "$MACHINE" == "x86_64" ]; then
+#         ARCH="amd64"
+#     elif [ "$MACHINE" == "i386" ]||[ "$MACHINE" == "i686" ]; then
+#         ARCH="x86"
+#     else
+#         errorAndExit "$MACHINE is not supported!"
+#     fi
 
-    okAndSleep "Searching latest build for hardware type $MACHINE with arch $ARCH."
+#     okAndSleep "Searching latest build for hardware type $MACHINE with arch $ARCH."
 
-    for VERSION in `curl -s "http://dl.4players.de/ts/releases/?C=M;O=D" | grep -Po '(?<=href=")[0-9]+(\.[0-9]+){2,3}(?=/")' | sort -Vr`; do
+#     for VERSION in `curl -s "http://dl.4players.de/ts/releases/?C=M;O=D" | grep -Po '(?<=href=")[0-9]+(\.[0-9]+){2,3}(?=/")' | sort -Vr`; do
 
-        DOWNLOAD_URL_VERSION="http://dl.4players.de/ts/releases/$VERSION/teamspeak3-server_linux_$ARCH-$VERSION.tar.bz2"
-        STATUS=`curl -I $DOWNLOAD_URL_VERSION 2>&1 | grep "HTTP/" | awk '{print $2}'`
+#         DOWNLOAD_URL_VERSION="http://dl.4players.de/ts/releases/$VERSION/teamspeak3-server_linux_$ARCH-$VERSION.tar.bz2"
+#         STATUS=`curl -I $DOWNLOAD_URL_VERSION 2>&1 | grep "HTTP/" | awk '{print $2}'`
 
-        if [ "$STATUS" == "200" ]; then
-            DOWNLOAD_URL=$DOWNLOAD_URL_VERSION
-            break
-        fi
-    done
+#         if [ "$STATUS" == "200" ]; then
+#             DOWNLOAD_URL=$DOWNLOAD_URL_VERSION
+#             break
+#         fi
+#     done
 
-    if [ "$STATUS" == "200" -a "$DOWNLOAD_URL" != "" ]; then
-        okAndSleep "Detected latest server version as $VERSION with download URL $DOWNLOAD_URL"
-    else
-        errorAndExit "Could not detect latest server version"
-    fi
-fi
+#     if [ "$STATUS" == "200" -a "$DOWNLOAD_URL" != "" ]; then
+#         okAndSleep "Detected latest server version as $VERSION with download URL $DOWNLOAD_URL"
+#     else
+#         errorAndExit "Could not detect latest server version"
+#     fi
+# fi
 
 # If we need to install and configure a webspace than we need to identify the groupID
-if [ "$INSTALL" == "EW" -o  "$INSTALL" == "WR" ]; then
+# if [ "$INSTALL" == "EW" -o  "$INSTALL" == "WR" ]; then
 
-    WEBGROUPID=`getent group www-data | awk -F ':' '{print $3}'`
+#     WEBGROUPID=`getent group www-data | awk -F ':' '{print $3}'`
 
-    if [ "$INSTALL" == "EW" ]; then
-        OPTION="Yes"
-    else
-        cyanMessage " "
-        cyanMessage "Found group www-data with group ID $WEBGROUPID. Use as webservergroup?"
+#     if [ "$INSTALL" == "EW" ]; then
+#         OPTION="Yes"
+#     else
+#         cyanMessage " "
+#         cyanMessage "Found group www-data with group ID $WEBGROUPID. Use as webservergroup?"
 
-        OPTIONS=("Yes" "No" "Quit")
-        select OPTION in "${OPTIONS[@]}"; do
-            case "$REPLY" in
-                1|2 ) break;;
-                3 ) errorAndQuit;;
-                *) errorAndContinue;;
-            esac
-        done
-    fi
+#         OPTIONS=("Yes" "No" "Quit")
+#         select OPTION in "${OPTIONS[@]}"; do
+#             case "$REPLY" in
+#                 1|2 ) break;;
+#                 3 ) errorAndQuit;;
+#                 *) errorAndContinue;;
+#             esac
+#         done
+#     fi
 
-    if [ "$OPTION" == "No" ]; then
+#     if [ "$OPTION" == "No" ]; then
 
-        cyanMessage "Please name the group you want to use as webservergroup"
-        read WEBGROUP
+#         cyanMessage "Please name the group you want to use as webservergroup"
+#         read WEBGROUP
 
-        WEBGROUPID=`getent group $WEBGROUP | awk -F ':' '{print $3}'`
+#         WEBGROUPID=`getent group $WEBGROUP | awk -F ':' '{print $3}'`
 
-        if [ "$WEBGROUPID" == "" ]; then
-            $GROUPADD $WEBGROUP
-            WEBGROUPID=`getent group $WEBGROUP | awk -F ':' '{print $3}'`
-        fi
-    fi
+#         if [ "$WEBGROUPID" == "" ]; then
+#             $GROUPADD $WEBGROUP
+#             WEBGROUPID=`getent group $WEBGROUP | awk -F ':' '{print $3}'`
+#         fi
+#     fi
 
-    if [ "$WEBGROUPID" == "" ]; then
-        errorAndExit "Fatal Error: missing webservergroup ID"
-    fi
-fi
+#     if [ "$WEBGROUPID" == "" ]; then
+#         errorAndExit "Fatal Error: missing webservergroup ID"
+#     fi
+# fi
 
-function checkUser {
+function checkUser() {
 
     if [ "$1" == "" ]; then
         redMessage "Error: No masteruser specified"
     elif [ "$1" == "root" ]; then
         redMessage "Error: Using root as masteruser is a security hazard and not allowed."
-    elif [ "`id $1 2> /dev/null`" != "" ] && ([ "$INSTALL" != "EW" -a "$INSTALL" != "WR" ] || [ ! -d "/home/$1/sites-enabled" ]); then
+    elif [ "$(id $1 2>/dev/null)" != "" ] && ([ "$INSTALL" != "EW" -a "$INSTALL" != "WR" ] || [ ! -d "/home/$1/sites-enabled" ]); then
         redMessage "Error: User \"$1\" already exists. Please name a not yet existing user"
     else
         echo 1
@@ -371,12 +398,12 @@ if [ "$INSTALL" != "MY" ]; then
     cyanMessage "Please enter the name of the masteruser, which does not exist yet."
     read MASTERUSER
 
-    CHECK_USER=`checkUser $MASTERUSER`
+    CHECK_USER=$(checkUser $MASTERUSER)
 
     if [ "$CHECK_USER" != "1" ]; then
         echo $CHECK_USER
         read MASTERUSER
-        CHECK_USER=`checkUser $MASTERUSER`
+        CHECK_USER=$(checkUser $MASTERUSER)
 
         if [ "$CHECK_USER" != "1" ]; then
             echo $CHECK_USER
@@ -384,7 +411,7 @@ if [ "$INSTALL" != "MY" ]; then
         fi
     fi
 
-    if [ "`id $1 2> /dev/null`" != "" ]; then
+    if [ "$(id $1 2>/dev/null)" != "" ]; then
         if [ "$INSTALL" == "EW" -o "$INSTALL" == "WR" ]; then
             $USERADD -m -b /home -s /bin/bash -g $WEBGROUPID $MASTERUSER
         else
@@ -404,9 +431,9 @@ if [ "$INSTALL" != "MY" ]; then
     OPTIONS=("Create key" "Set password" "Skip" "Quit")
     select OPTION in "${OPTIONS[@]}"; do
         case "$REPLY" in
-            1|2|3 ) break;;
-            4 ) errorAndQuit;;
-            *) errorAndContinue;;
+        1 | 2 | 3) break ;;
+        4) errorAndQuit ;;
+        *) errorAndContinue ;;
         esac
     done
 
@@ -424,7 +451,7 @@ if [ "$INSTALL" != "MY" ]; then
         cyanMessage "It is recommended but not required to set a password"
         su -c "ssh-keygen -t rsa" $MASTERUSER
 
-        KEYNAME=`find -maxdepth 1 -name "*.pub" | head -n 1`
+        KEYNAME=$(find -maxdepth 1 -name "*.pub" | head -n 1)
 
         if [ "$KEYNAME" != "" ]; then
             su -c "cat $KEYNAME >> authorized_keys" $MASTERUSER
@@ -456,14 +483,14 @@ if [ "$INSTALL" == "EW" -o "$INSTALL" == "WR" -o "$INSTALL" == "MY" ]; then
         OPTIONS=("Yes" "No" "Quit")
         select DOTDEB in "${OPTIONS[@]}"; do
             case "$REPLY" in
-                1|2 ) break;;
-                3 ) errorAndQuit;;
-                 *) errorAndContinue;;
+            1 | 2) break ;;
+            3) errorAndQuit ;;
+            *) errorAndContinue ;;
             esac
         done
 
         if [ "$DOTDEB" == "Yes" ]; then
-            if [ "`grep 'packages.dotdeb.org' /etc/apt/sources.list`" == "" ]; then
+            if [ "$(grep 'packages.dotdeb.org' /etc/apt/sources.list)" == "" ]; then
 
                 okAndSleep "Adding entries to /etc/apt/sources.list"
 
@@ -479,7 +506,7 @@ if [ "$INSTALL" == "EW" -o "$INSTALL" == "WR" -o "$INSTALL" == "MY" ]; then
                 apt-key add dotdeb.gpg
                 removeIfExists dotdeb.gpg
                 apt-get update
-             fi
+            fi
         fi
     fi
 
@@ -496,9 +523,9 @@ if [ "$INSTALL" == "EW" -o "$INSTALL" == "WR" -o "$INSTALL" == "MY" ]; then
         OPTIONS=("Nginx" "Apache" "Quit")
         select WEBSERVER in "${OPTIONS[@]}"; do
             case "$REPLY" in
-                1|2 ) break;;
-                3 ) errorAndQuit;;
-                *) errorAndContinue;;
+            1 | 2) break ;;
+            3) errorAndQuit ;;
+            *) errorAndContinue ;;
             esac
         done
 
@@ -510,9 +537,9 @@ if [ "$INSTALL" == "EW" -o "$INSTALL" == "WR" -o "$INSTALL" == "MY" ]; then
         OPTIONS=("Nginx" "Apache" "Lighttpd" "None" "Quit")
         select WEBSERVER in "${OPTIONS[@]}"; do
             case "$REPLY" in
-                1|2|3|4 ) break;;
-                5 ) errorAndQuit;;
-                *) errorAndContinue;;
+            1 | 2 | 3 | 4) break ;;
+            5) errorAndQuit ;;
+            *) errorAndContinue ;;
             esac
         done
     fi
@@ -529,7 +556,7 @@ if [ "$INSTALL" == "EW" -o "$INSTALL" == "WR" -o "$INSTALL" == "MY" ]; then
 
         okAndSleep "Please note that Easy-Wi requires a MySQL or MariaDB installed and will install MySQL if no DB is installed"
 
-        if [ "`ps ax | grep mysql | grep -v grep`" == "" ]; then
+        if [ "$(ps ax | grep mysql | grep -v grep)" == "" ]; then
             SQL="MySQL"
         else
             SQL=""
@@ -544,21 +571,21 @@ if [ "$INSTALL" == "EW" -o "$INSTALL" == "WR" -o "$INSTALL" == "MY" ]; then
         OPTIONS=("MySQL" "MariaDB" "None" "Quit")
         select SQL in "${OPTIONS[@]}"; do
             case "$REPLY" in
-                1|2|3 ) break;;
-                4 ) errorAndQuit;;
-                *) errorAndContinue;;
+            1 | 2 | 3) break ;;
+            4) errorAndQuit ;;
+            *) errorAndContinue ;;
             esac
         done
     fi
 
     if [ "$SQL" == "MySQL" -o "$SQL" == "MariaDB" ]; then
-        if [ "`ps fax | grep 'mysqld' | grep -v 'grep'`" ]; then
+        if [ "$(ps fax | grep 'mysqld' | grep -v 'grep')" ]; then
 
             cyanMessage " "
             cyanMessage "Please provide the root password for the MySQL Database."
             read MYSQL_ROOT_PASSWORD
 
-            mysql -uroot -p$MYSQL_ROOT_PASSWORD -e exit 2> /dev/null
+            mysql -uroot -p$MYSQL_ROOT_PASSWORD -e exit 2>/dev/null
             ERROR_CODE=$?
 
             until [ $ERROR_CODE == 0 ]; do
@@ -566,7 +593,7 @@ if [ "$INSTALL" == "EW" -o "$INSTALL" == "WR" -o "$INSTALL" == "MY" ]; then
                 cyanMessage "Password incorrect, please provide the root password for the MySQL Database."
                 read MYSQL_ROOT_PASSWORD
 
-                mysql -uroot -p$MYSQL_ROOT_PASSWORD -e exit 2> /dev/null
+                mysql -uroot -p$MYSQL_ROOT_PASSWORD -e exit 2>/dev/null
                 ERROR_CODE=$?
             done
 
@@ -590,12 +617,12 @@ if [ "$INSTALL" == "EW" -o "$INSTALL" == "WR" -o "$INSTALL" == "MY" ]; then
 
         RUNUPDATE=0
 
-        if ([ "`printf "${OSVERSION}\n8.0" | sort -V | tail -n 1`" == "8.0" -o "$OS" == "ubuntu" ] && [ "`grep '/mariadb/' /etc/apt/sources.list`" == "" ]); then
+        if ([ "$(printf "${OSVERSION}\n8.0" | sort -V | tail -n 1)" == "8.0" -o "$OS" == "ubuntu" ] && [ "$(grep '/mariadb/' /etc/apt/sources.list)" == "" ]); then
 
             checkInstall python-software-properties
             apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xcbcb082a1bb943db
 
-            if [ "$SQL" == "MariaDB" -a "`apt-cache search mariadb-server-10.0`" == "" ]; then
+            if [ "$SQL" == "MariaDB" -a "$(apt-cache search mariadb-server-10.0)" == "" ]; then
                 if [ "$OS" == "debian" ]; then
                     add-apt-repository "deb http://mirror.netcologne.de/mariadb/repo/10.0/debian $OSBRANCH main"
                     RUNUPDATE=1
@@ -607,9 +634,9 @@ if [ "$INSTALL" == "EW" -o "$INSTALL" == "WR" -o "$INSTALL" == "MY" ]; then
         fi
 
         if [ "$OS" == "debian" -a "$DOTDEB" == "Yes" ]; then
-            echo "Package: *" > /etc/apt/preferences.d/mariadb.pref
-            echo "Pin: origin mirror.netcologne.de" >> /etc/apt/preferences.d/mariadb.pref
-            echo "Pin-Priority: 1000" >> /etc/apt/preferences.d/mariadb.pref
+            echo "Package: *" >/etc/apt/preferences.d/mariadb.pref
+            echo "Pin: origin mirror.netcologne.de" >>/etc/apt/preferences.d/mariadb.pref
+            echo "Pin-Priority: 1000" >>/etc/apt/preferences.d/mariadb.pref
             RUNUPDATE=1
         fi
 
@@ -617,7 +644,7 @@ if [ "$INSTALL" == "EW" -o "$INSTALL" == "WR" -o "$INSTALL" == "MY" ]; then
             apt-get update
         fi
 
-        if ([ "`printf "${OSVERSION}\n8.0" | sort -V | tail -n 1`" == "8.0" -o "$OS" == "ubuntu" ] && [ "`grep '/mariadb/' /etc/apt/sources.list`" == "" ]); then
+        if ([ "$(printf "${OSVERSION}\n8.0" | sort -V | tail -n 1)" == "8.0" -o "$OS" == "ubuntu" ] && [ "$(grep '/mariadb/' /etc/apt/sources.list)" == "" ]); then
             apt-get install mariadb-server mariadb-client mysql-common -y
         else
             apt-get install mariadb-server mariadb-client mariadb-common -y
@@ -634,25 +661,25 @@ if [ "$INSTALL" == "EW" -o "$INSTALL" == "WR" -o "$INSTALL" == "MY" ]; then
             OPTIONS=("Yes" "No" "Quit")
             select EXTERNAL_INSTALL in "${OPTIONS[@]}"; do
                 case "$REPLY" in
-                    1|2 ) break;;
-                    3 ) errorAndQuit;;
-                    *) errorAndContinue;;
+                1 | 2) break ;;
+                3) errorAndQuit ;;
+                *) errorAndContinue ;;
                 esac
             done
         fi
 
         cyanMessage " "
         okAndSleep "Securing MySQL by running \"mysql_secure_installation\" commands."
-        mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "DELETE FROM mysql.user WHERE User=''" 2> /dev/null
-        mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1')" 2> /dev/null
-        mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'" 2> /dev/null
-        mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "FLUSH PRIVILEGES" 2> /dev/null
+        mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "DELETE FROM mysql.user WHERE User=''" 2>/dev/null
+        mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1')" 2>/dev/null
+        mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'" 2>/dev/null
+        mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "FLUSH PRIVILEGES" 2>/dev/null
     fi
 
     if [ "$EXTERNAL_INSTALL" == "Yes" ]; then
 
-        mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "GRANT USAGE ON *.* TO 'root'@'' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD' WITH MAX_QUERIES_PER_HOUR 0 MAX_CONNECTIONS_PER_HOUR 0 MAX_UPDATES_PER_HOUR 0 MAX_USER_CONNECTIONS 0" 2> /dev/null
-        mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "UPDATE mysql.user SET Select_priv='Y',Insert_priv='Y',Update_priv='Y',Delete_priv='Y',Create_priv='Y',Drop_priv='Y',Reload_priv='Y',Shutdown_priv='Y',Process_priv='Y',File_priv='Y',Grant_priv='Y',References_priv='Y',Index_priv='Y',Alter_priv='Y',Show_db_priv='Y',Super_priv='Y',Create_tmp_table_priv='Y',Lock_tables_priv='Y',Execute_priv='Y',Repl_slave_priv='Y',Repl_client_priv='Y',Create_view_priv='Y',Show_view_priv='Y',Create_routine_priv='Y',Alter_routine_priv='Y',Create_user_priv='Y',Event_priv='Y',Trigger_priv='Y',Create_tablespace_priv='Y' WHERE User='root' AND Host=''" 2> /dev/null
+        mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "GRANT USAGE ON *.* TO 'root'@'' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD' WITH MAX_QUERIES_PER_HOUR 0 MAX_CONNECTIONS_PER_HOUR 0 MAX_UPDATES_PER_HOUR 0 MAX_USER_CONNECTIONS 0" 2>/dev/null
+        mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "UPDATE mysql.user SET Select_priv='Y',Insert_priv='Y',Update_priv='Y',Delete_priv='Y',Create_priv='Y',Drop_priv='Y',Reload_priv='Y',Shutdown_priv='Y',Process_priv='Y',File_priv='Y',Grant_priv='Y',References_priv='Y',Index_priv='Y',Alter_priv='Y',Show_db_priv='Y',Super_priv='Y',Create_tmp_table_priv='Y',Lock_tables_priv='Y',Execute_priv='Y',Repl_slave_priv='Y',Repl_client_priv='Y',Create_view_priv='Y',Show_view_priv='Y',Create_routine_priv='Y',Alter_routine_priv='Y',Create_user_priv='Y',Event_priv='Y',Trigger_priv='Y',Create_tablespace_priv='Y' WHERE User='root' AND Host=''" 2>/dev/null
 
         if [ "$LOCAL_IP" == "" ]; then
 
@@ -662,23 +689,23 @@ if [ "$INSTALL" == "EW" -o "$INSTALL" == "WR" -o "$INSTALL" == "MY" ]; then
         fi
 
         if [ "$LOCAL_IP" != "" -a -f /etc/mysql/my.cnf ]; then
-            if [ "`grep 'bind-address' /etc/mysql/my.cnf`" ]; then
+            if [ "$(grep 'bind-address' /etc/mysql/my.cnf)" ]; then
                 sed -i "s/bind-address.*/bind-address = 0.0.0.0/g" /etc/mysql/my.cnf
             else
-                echo "bind-address = 0.0.0.0" >> /etc/mysql/my.cnf
+                echo "bind-address = 0.0.0.0" >>/etc/mysql/my.cnf
             fi
         fi
     fi
 
-    MYSQL_VERSION=`mysql -V | awk {'print $5'} | tr -d ,`
+    MYSQL_VERSION=$(mysql -V | awk {'print $5'} | tr -d ,)
 
-    if [ "`grep -E 'key_buffer[[:space:]]*=' /etc/mysql/my.cnf`" != "" -a "printf "${MYSQL_VERSION}\n5.5" | sort -V | tail -n 1" != 5.5 ]; then
+    if [ "$(grep -E 'key_buffer[[:space:]]*=' /etc/mysql/my.cnf)" != "" -a "printf "${MYSQL_VERSION}\n5.5" | sort -V | tail -n 1" != 5.5 ]; then
         sed -i "s/key_buffer[[:space:]]*=/key_buffer_size = /g" /etc/mysql/my.cnf
     fi
 
     /etc/init.d/mysql restart
 
-    if [ "$INSTALL" == "EW" -a "`ps ax | grep mysql | grep -v grep`" == "" ]; then
+    if [ "$INSTALL" == "EW" -a "$(ps ax | grep mysql | grep -v grep)" == "" ]; then
         cyanMessage " "
         errorAndExit "Error: No SQL server running but required for Webpanel installation."
     fi
@@ -697,9 +724,9 @@ if [ "$INSTALL" == "EW" -o "$INSTALL" == "WR" -o "$INSTALL" == "MY" ]; then
         OPTIONS=("Yes" "No" "None" "Quit")
         select PHPINSTALL in "${OPTIONS[@]}"; do
             case "$REPLY" in
-                1|2|3 ) break;;
-                4 ) errorAndQuit;;
-                *) errorAndContinue;;
+            1 | 2 | 3) break ;;
+            4) errorAndQuit ;;
+            *) errorAndContinue ;;
             esac
         done
     fi
@@ -708,11 +735,11 @@ if [ "$INSTALL" == "EW" -o "$INSTALL" == "WR" -o "$INSTALL" == "MY" ]; then
 
         USE_PHP_VERSION='5'
 
-        if [ "$OS" == "ubuntu" -a "`printf "${OSVERSION}\n16.03" | sort -V | tail -n 1`" != "16.03" ]; then
+        if [ "$OS" == "ubuntu" -a "$(printf "${OSVERSION}\n16.03" | sort -V | tail -n 1)" != "16.03" ]; then
             USE_PHP_VERSION='7.0'
-        elif [ "$OS" == "debian" -a "`printf "${OSVERSION}\n9.0" | sort -V | tail -n 1`" != "9.0" ]; then
+        elif [ "$OS" == "debian" -a "$(printf "${OSVERSION}\n9.0" | sort -V | tail -n 1)" != "9.0" ]; then
             USE_PHP_VERSION='7.0'
-        fi 
+        fi
 
         if [ "$OS" == "debian" -a "$DOTDEB" == "Yes" ]; then
 
@@ -725,24 +752,24 @@ if [ "$INSTALL" == "EW" -o "$INSTALL" == "WR" -o "$INSTALL" == "MY" ]; then
                 OPTIONS=("5.4" "5.5", "5.6", "5.6 Zend thread safety" "Quit")
                 select DOTDEBPHPUPGRADE in "${OPTIONS[@]}"; do
                     case "$REPLY" in
-                        1|2|3|4 ) break;;
-                        5 ) errorAndQuit;;
-                        *) errorAndContinue;;
+                    1 | 2 | 3 | 4) break ;;
+                    5) errorAndQuit ;;
+                    *) errorAndContinue ;;
                     esac
                 done
 
-                if [ "$DOTDEBPHPUPGRADE" == "5.5" -a "`grep 'wheezy-php55' /etc/apt/sources.list`" == "" ]; then
+                if [ "$DOTDEBPHPUPGRADE" == "5.5" -a "$(grep 'wheezy-php55' /etc/apt/sources.list)" == "" ]; then
                     add-apt-repository "deb http://packages.dotdeb.org wheezy-php55 all"
                     add-apt-repository "deb-src http://packages.dotdeb.org wheezy-php55 all"
-                elif [ "$DOTDEBPHPUPGRADE" == "5.6" -a "`grep 'wheezy-php56' /etc/apt/sources.list`" == "" ]; then
+                elif [ "$DOTDEBPHPUPGRADE" == "5.6" -a "$(grep 'wheezy-php56' /etc/apt/sources.list)" == "" ]; then
                     add-apt-repository "deb http://packages.dotdeb.org wheezy-php56 all"
                     add-apt-repository "deb-src http://packages.dotdeb.org wheezy-php56 all"
-                elif [ "$DOTDEBPHPUPGRADE" == "5.6 Zend thread safety" -a "`grep 'wheezy-php56-zts' /etc/apt/sources.list`" == "" ]; then
+                elif [ "$DOTDEBPHPUPGRADE" == "5.6 Zend thread safety" -a "$(grep 'wheezy-php56-zts' /etc/apt/sources.list)" == "" ]; then
                     add-apt-repository "deb http://packages.dotdeb.org wheezy-php56-zts all"
                     add-apt-repository "deb-src http://packages.dotdeb.org wheezy-php56-zts all"
                 fi
 
-            elif [ "$OSBRANCH" == "squeeze" -a "`grep 'squeeze-php54' /etc/apt/sources.list`" == "" ]; then
+            elif [ "$OSBRANCH" == "squeeze" -a "$(grep 'squeeze-php54' /etc/apt/sources.list)" == "" ]; then
                 add-apt-repository "deb http://packages.dotdeb.org squeeze-php54 all"
                 add-apt-repository "deb-src http://packages.dotdeb.org squeeze-php54 all"
             fi
@@ -774,11 +801,11 @@ if [ "$INSTALL" == "EW" -o "$INSTALL" == "WR" -o "$INSTALL" == "MY" ]; then
 
             makeDir /home/$MASTERUSER/fpm-pool.d/
 
-	    if [ -f /etc/php5/fpm/php-fpm.conf ]; then
-            	sed -i "s/include=\/etc\/php5\/fpm\/pool.d\/\*.conf/include=\/home\/$MASTERUSER\/fpm-pool.d\/\*.conf/g" /etc/php5/fpm/php-fpm.conf
-	    elif [ -f /etc/php/7.0/fpm/php-fpm.conf ]; then
-            	sed -i "s/include=\/etc\/php\/7.0\/fpm\/pool.d\/\*.conf/include=\/home\/$MASTERUSER\/fpm-pool.d\/\*.conf/g" /etc/php/7.0/fpm/php-fpm.conf
-	    fi
+            if [ -f /etc/php5/fpm/php-fpm.conf ]; then
+                sed -i "s/include=\/etc\/php5\/fpm\/pool.d\/\*.conf/include=\/home\/$MASTERUSER\/fpm-pool.d\/\*.conf/g" /etc/php5/fpm/php-fpm.conf
+            elif [ -f /etc/php/7.0/fpm/php-fpm.conf ]; then
+                sed -i "s/include=\/etc\/php\/7.0\/fpm\/pool.d\/\*.conf/include=\/home\/$MASTERUSER\/fpm-pool.d\/\*.conf/g" /etc/php/7.0/fpm/php-fpm.conf
+            fi
 
         elif [ "$WEBSERVER" == "Apache" ]; then
             checkInstall apache2-mpm-itk
@@ -787,56 +814,76 @@ if [ "$INSTALL" == "EW" -o "$INSTALL" == "WR" -o "$INSTALL" == "MY" ]; then
             checkInstall php${USE_PHP_VERSION}
             a2enmod php${USE_PHP_VERSION}
         fi
-        
+
         #In case of php 7 the socket is different
-        PHP_VERSION=`php -v | grep -E '^PHP' | awk '{print $2}' | awk -F '.' '{print $1}'`
+        PHP_VERSION=$(php -v | grep -E '^PHP' | awk '{print $2}' | awk -F '.' '{print $1}')
         PHP_SOCKET="/var/run/php${PHP_VERSION}-fpm-${FILE_NAME}.sock"
     fi
 fi
 
-if ([ "$INSTALL" == "WR" -o "$INSTALL" == "EW" ] && [ "`grep '/bin/false' /etc/shells`" == "" ]); then
-    echo "/bin/false" >> /etc/shells
+if ([ "$INSTALL" == "WR" -o "$INSTALL" == "EW" ] && [ "$(grep '/bin/false' /etc/shells)" == "" ]); then
+    echo "/bin/false" >>/etc/shells
 fi
 
 if [ "$INSTALL" != "VS" -a "$INSTALL" != "EW" -a "$INSTALL" != "MY" ]; then
-
+    ## Proftpd is installed by default in Slackware
     cyanMessage " "
     cyanMessage "Install/Update ProFTPD?"
 
     OPTIONS=("Yes" "No" "Quit")
     select OPTION in "${OPTIONS[@]}"; do
         case "$REPLY" in
-            1|2 ) break;;
-            3 ) errorAndQuit;;
-            *) errorAndContinue;;
+        1 | 2) break ;;
+        3) errorAndQuit ;;
+        *) errorAndContinue ;;
         esac
     done
 
     if [ "$OPTION" == "Yes" ]; then
-
-        echo "proftpd-basic shared/proftpd/inetd_or_standalone select standalone" | debconf-set-selections
-        apt-get install proftpd -y
+        if [ $OS != "Slackware" ]; then
+            ## Skip this if running on slackware
+            echo "proftpd-basic shared/proftpd/inetd_or_standalone select standalone" | debconf-set-selections
+            apt-get install proftpd -y
+        fi
 
         if [ -f /etc/proftpd/modules.conf ]; then
 
             backUpFile /etc/proftpd/modules.conf
 
             sed -i 's/.*LoadModule mod_tls_memcache.c.*/#LoadModule mod_tls_memcache.c/g' /etc/proftpd/modules.conf
+        else
+            touch /etc/proftpd/modules.conf
+            #backUpFile /etc/proftpd/modules.conf
+            sed -i 's/.*LoadModule mod_tls_memcache.c.*/#LoadModule mod_tls_memcache.c/g' /etc/proftpd/modules.conf
         fi
 
-        backUpFile /etc/proftpd/proftpd.conf
+        if [ -f /etc/proftpd/proftpd.conf ]; then
+            backUpFile /etc/proftpd/proftpd.conf
 
-        sed -i 's/.*UseIPv6.*/UseIPv6 off/g' /etc/proftpd/proftpd.conf
-        sed -i 's/#.*DefaultRoot.*~/DefaultRoot ~/g' /etc/proftpd/proftpd.conf
-        sed -i 's/# RequireValidShell.*/RequireValidShell on/g' /etc/proftpd/proftpd.conf
+            sed -i 's/.*UseIPv6.*/UseIPv6 off/g' /etc/proftpd/proftpd.conf
+            sed -i 's/#.*DefaultRoot.*~/DefaultRoot ~/g' /etc/proftpd/proftpd.conf
+            sed -i 's/# RequireValidShell.*/RequireValidShell on/g' /etc/proftpd/proftpd.conf
+
+        ## On Slackware the default PureFTPD configuration is at /etc/pureftpd.conf
+        elif [ -f /etc/proftpd.conf ]; then
+            backUpFile /etc/proftpd.conf
+
+            sed -i 's/.*UseIPv6.*/UseIPv6 off/g' /etc/proftpd.conf
+            sed -i 's/#.*DefaultRoot.*~/DefaultRoot ~/g' /etc/proftpd.conf
+            sed -i 's/# RequireValidShell.*/RequireValidShell on/g' /etc/proftpd.conf
+        fi
 
         if [ -f /etc/proftpd/proftpd.conf -a "$INSTALL" != "GS" ]; then
-
             sed -i 's/Umask.*/Umask 037 027/g' /etc/proftpd/proftpd.conf
 
-        elif [ -f /etc/proftpd/proftpd.conf -a "$INSTALL" == "GS" ]; then
+        elif [ -f /etc/proftpd.conf -a "$INSTALL" != "GS" ]; then
+            sed -i 's/Umask.*/Umask 037 027/g' /etc/proftpd.conf
 
+        elif [ -f /etc/proftpd/proftpd.conf -a "$INSTALL" == "GS" ]; then
             sed -i 's/Umask.*/Umask 077 077/g' /etc/proftpd/proftpd.conf
+
+        elif [ -f /etc/proftpd.conf -a "$INSTALL" == "GS" ]; then
+            sed -i 's/Umask.*/Umask 077 077/g' /etc/proftpd.conf
 
             cyanMessage " "
             cyanMessage "Install/Update ProFTPD Rules?"
@@ -844,13 +891,18 @@ if [ "$INSTALL" != "VS" -a "$INSTALL" != "EW" -a "$INSTALL" != "MY" ]; then
             OPTIONS=("Yes" "No" "Quit")
             select OPTION in "${OPTIONS[@]}"; do
                 case "$REPLY" in
-                    1|2 ) break;;
-                    3 ) errorAndQuit;;
-                    *) errorAndContinue;;
+                1 | 2) break ;;
+                3) errorAndQuit ;;
+                *) errorAndContinue ;;
                 esac
             done
 
-            if [ "$OPTION" == "Yes" -a "`grep '<Directory \/home\/\*\/pserver\/\*>' /etc/proftpd/proftpd.conf`" == "" -a ! -f "/etc/proftpd/conf.d/easy-wi.conf" ]; then
+            if [ $OS == "debian" ] && [ "$OPTION" == "Yes" -a "$(grep '<Directory \/home\/\*\/pserver\/\*>' /etc/proftpd/proftpd.conf)" == "" -a ! -f "/etc/proftpd/conf.d/easy-wi.conf" ]; then
+
+                makeDir /etc/proftpd/conf.d/
+                chmod 755 /etc/proftpd/conf.d/
+
+            elif [ $OS == "Slackware" ] && [ "$OPTION" == "Yes" -a "$(grep '<Directory \/home\/\*\/pserver\/\*>' /etc/proftpd.conf)" == "" -a ! -f "/etc/proftpd/conf.d/easy-wi.conf" ]; then
 
                 makeDir /etc/proftpd/conf.d/
                 chmod 755 /etc/proftpd/conf.d/
@@ -863,8 +915,8 @@ if [ "$INSTALL" != "VS" -a "$INSTALL" != "EW" -a "$INSTALL" != "MY" ]; then
     <Limit RNTO RNFR STOR DELE CHMOD SITE_CHMOD MKD RMD>
         DenyAll
     </Limit>
-</Directory>" > /etc/proftpd/conf.d/easy-wi.conf
-                echo "<Directory /home/$MASTERUSER>" >> /etc/proftpd/conf.d/easy-wi.conf
+</Directory>" >/etc/proftpd/conf.d/easy-wi.conf
+                echo "<Directory /home/$MASTERUSER>" >>/etc/proftpd/conf.d/easy-wi.conf
                 echo "    HideFiles (^\..+|\.ssh|\.bash_history|\.bash_logout|\.bashrc|\.profile)$
     PathDenyFilter (^\..+|\.ssh|\.bash_history|\.bash_logout|\.bashrc|\.profile)$
     HideNoAccess on
@@ -889,8 +941,7 @@ if [ "$INSTALL" != "VS" -a "$INSTALL" != "EW" -a "$INSTALL" != "MY" ]; then
     HideFiles (^\..+|srcds_run|srcds_linux|hlds_run|hlds_amd|hlds_i686|\.rc|\.sh|\.7z|\.dll)$
     PathDenyFilter (^\..+|srcds_run|srcds_linux|hlds_run|hlds_amd|hlds_i686|\.rc|\.sh|\.7z|\.dll)$
     HideNoAccess on
-</Directory>" >> /etc/proftpd/conf.d/easy-wi.conf
-
+</Directory>" >>/etc/proftpd/conf.d/easy-wi.conf
 
                 GAMES=("ark" "arma3" "bukkit" "hexxit" "mc" "mtasa" "projectcars" "rust" "samp" "spigot" "teeworlds" "tekkit" "tekkit-classic")
 
@@ -900,7 +951,7 @@ if [ "$INSTALL" != "VS" -a "$INSTALL" != "EW" -a "$INSTALL" != "MY" ]; then
     <Limit RNFR RNTO STOR DELE MKD RMD>
         AllowAll
     </Limit>
-</Directory>" >> /etc/proftpd/conf.d/easy-wi.conf
+</Directory>" >>/etc/proftpd/conf.d/easy-wi.conf
                 done
 
                 GAME_MODS=("csgo" "cstrike" "czero" "orangebox" "dod" "garrysmod")
@@ -911,7 +962,7 @@ if [ "$INSTALL" != "VS" -a "$INSTALL" != "EW" -a "$INSTALL" != "MY" ]; then
     <Limit RNFR RNTO STOR DELE MKD RMD>
         AllowAll
     </Limit>
-</Directory>" >> /etc/proftpd/conf.d/easy-wi.conf
+</Directory>" >>/etc/proftpd/conf.d/easy-wi.conf
                 done
 
                 FOLDERS=("addons" "cfg" "maps")
@@ -928,13 +979,17 @@ if [ "$INSTALL" != "VS" -a "$INSTALL" != "EW" -a "$INSTALL" != "MY" ]; then
     <Limit RNFR RNTO STOR DELE MKD RMD>
         AllowAll
     </Limit>
-</Directory>" >> /etc/proftpd/conf.d/easy-wi.conf
+</Directory>" >>/etc/proftpd/conf.d/easy-wi.conf
                 done
             fi
         fi
 
-        if [ -f /etc/init.d/proftpd ]; then
+        if [ $OS != "Slackware" ] && [ -f /etc/init.d/proftpd ]; then
             service proftpd restart
+
+        elif [ $OS == "Slackware" ] && [ -f /etc/rc.d/rc.proftpd ]; then
+            /etc/rc.d/rc.proftpd restart
+
         fi
     fi
 fi
@@ -947,9 +1002,9 @@ if [ "$INSTALL" == "GS" -o "$INSTALL" == "WR" ]; then
     OPTIONS=("Yes" "No" "Quit")
     select QUOTAINSTALL in "${OPTIONS[@]}"; do
         case "$REPLY" in
-            1|2 ) break;;
-            3 ) errorAndQuit;;
-            *) errorAndContinue;;
+        1 | 2) break ;;
+        3) errorAndQuit ;;
+        *) errorAndContinue ;;
         esac
     done
 
@@ -963,12 +1018,12 @@ if [ "$INSTALL" == "GS" -o "$INSTALL" == "WR" ]; then
         removeIfExists /root/tempmountpoints
 
         cat /etc/fstab | while read LINE; do
-            if [[ `echo $LINE | grep '/' | egrep -v '#|boot|proc|swap|floppy|cdrom|usrquota|usrjquota|/sys|/shm|/pts'` ]]; then
-                CURRENTOPTIONS=`echo $LINE | awk '{print $4}'`
-                echo $LINE | sed "s/$CURRENTOPTIONS/$CURRENTOPTIONS,usrjquota=aquota.user,jqfmt=vfsv0/g" >> /root/tempfstab
-                echo $LINE | awk '{print $2}' >> /root/tempmountpoints
+            if [[ $(echo $LINE | grep '/' | egrep -v '#|boot|proc|swap|floppy|cdrom|usrquota|usrjquota|/sys|/shm|/pts') ]]; then
+                CURRENTOPTIONS=$(echo $LINE | awk '{print $4}')
+                echo $LINE | sed "s/$CURRENTOPTIONS/$CURRENTOPTIONS,usrjquota=aquota.user,jqfmt=vfsv0/g" >>/root/tempfstab
+                echo $LINE | awk '{print $2}' >>/root/tempmountpoints
             else
-                echo $LINE >> /root/tempfstab
+                echo $LINE >>/root/tempfstab
             fi
         done
 
@@ -981,9 +1036,9 @@ if [ "$INSTALL" == "GS" -o "$INSTALL" == "WR" ]; then
         OPTIONS=("Yes" "No" "Quit")
         select QUOTAFSTAB in "${OPTIONS[@]}"; do
             case "$REPLY" in
-                1|2 ) break;;
-                3 ) errorAndQuit;;
-                *) errorAndContinue;;
+            1 | 2) break ;;
+            3) errorAndQuit ;;
+            *) errorAndContinue ;;
             esac
         done
 
@@ -1023,27 +1078,27 @@ if [ "$INSTALL" == "WR" -o "$INSTALL" == "EW" ]; then
 
         backUpFile /etc/nginx/nginx.conf
 
-        if [ "`grep '/home/$MASTERUSER/sites-enabled/' /etc/nginx/nginx.conf`" == "" ]; then
+        if [ "$(grep '/home/$MASTERUSER/sites-enabled/' /etc/nginx/nginx.conf)" == "" ]; then
             sed -i "\/etc\/nginx\/sites-enabled\/\*;/a \ \ \ \ \ \ \ \ include \/home\/$MASTERUSER\/sites-enabled\/\*;" /etc/nginx/nginx.conf
         fi
 
     elif [ "$WEBSERVER" == "Lighttpd" ]; then
 
         backUpFile /etc/lighttpd/lighttpd.conf
-        echo "include_shell \"find /home/$MASTERUSER/sites-enabled/ -maxdepth 1 -type f -exec cat {} \;\"" >> /etc/lighttpd/lighttpd.conf
+        echo "include_shell \"find /home/$MASTERUSER/sites-enabled/ -maxdepth 1 -type f -exec cat {} \;\"" >>/etc/lighttpd/lighttpd.conf
 
     elif [ "$WEBSERVER" == "Apache" ]; then
 
         backUpFile /etc/apache2/apache2.conf
 
-        if [ "`grep 'ServerName localhost' /etc/apache2/apache2.conf`" == "" ]; then
-            echo '# Added to prevent error message Could not reliably determine the servers fully qualified domain name' >> /etc/apache2/apache2.conf
-            echo 'ServerName localhost' >> /etc/apache2/apache2.conf
+        if [ "$(grep 'ServerName localhost' /etc/apache2/apache2.conf)" == "" ]; then
+            echo '# Added to prevent error message Could not reliably determine the servers fully qualified domain name' >>/etc/apache2/apache2.conf
+            echo 'ServerName localhost' >>/etc/apache2/apache2.conf
         fi
 
-        APACHE_VERSION=`apache2 -v | grep 'Server version'`
+        APACHE_VERSION=$(apache2 -v | grep 'Server version')
 
-        if [ "`grep '/home/$MASTERUSER/sites-enabled/' /etc/apache2/apache2.conf`" == "" ]; then
+        if [ "$(grep '/home/$MASTERUSER/sites-enabled/' /etc/apache2/apache2.conf)" == "" ]; then
             if [[ $APACHE_VERSION =~ .*Apache/2.2.* ]]; then
                 sed -i "/Include sites-enabled\//a Include \/home\/$MASTERUSER\/sites-enabled\/" /etc/apache2/apache2.conf
                 sed -i "/Include \/etc\/apache2\/sites-enabled\//a \/home\/$MASTERUSER\/sites-enabled\/" /etc/apache2/apache2.conf
@@ -1055,70 +1110,72 @@ if [ "$INSTALL" == "WR" -o "$INSTALL" == "EW" ]; then
 
         okAndSleep "Activating Apache mod_rewrite module."
         a2enmod rewrite
-        a2enmod version 2> /dev/null
+        a2enmod version 2>/dev/null
     fi
 
     #TODO: Logrotate
 fi
 
 # No direct root access for masteruser. Only limited access through sudo
-if [ "$INSTALL" == "GS" -o  "$INSTALL" == "WR" ]; then
+if [ "$INSTALL" == "GS" -o "$INSTALL" == "WR" ]; then
 
-    checkInstall sudo
-
-    if [ -f /etc/sudoers -a "`grep $MASTERUSER /etc/sudoers | grep $USERADD`" == "" ]; then
-        echo "$MASTERUSER ALL = NOPASSWD: $USERADD" >> /etc/sudoers
+    if [ $OS == "debian" ]; then
+        checkInstall sudo
     fi
 
-    if [ -f /etc/sudoers -a "`grep $MASTERUSER /etc/sudoers | grep $USERMOD`" == "" ]; then
-        echo "$MASTERUSER ALL = NOPASSWD: $USERMOD" >> /etc/sudoers
+    if [ -f /etc/sudoers -a "$(grep $MASTERUSER /etc/sudoers | grep $USERADD)" == "" ]; then
+        echo "$MASTERUSER ALL = NOPASSWD: $USERADD" >>/etc/sudoers
     fi
 
-    if [ -f /etc/sudoers -a "`grep $MASTERUSER /etc/sudoers | grep $USERDEL`" == "" ]; then
-        echo "$MASTERUSER ALL = NOPASSWD: $USERDEL" >> /etc/sudoers
+    if [ -f /etc/sudoers -a "$(grep $MASTERUSER /etc/sudoers | grep $USERMOD)" == "" ]; then
+        echo "$MASTERUSER ALL = NOPASSWD: $USERMOD" >>/etc/sudoers
+    fi
+
+    if [ -f /etc/sudoers -a "$(grep $MASTERUSER /etc/sudoers | grep $USERDEL)" == "" ]; then
+        echo "$MASTERUSER ALL = NOPASSWD: $USERDEL" >>/etc/sudoers
     fi
 
     if [ "$QUOTAINSTALL" == "Yes" -a -f /etc/sudoers ]; then
-        if [ "`grep $MASTERUSER /etc/sudoers | grep setquota`" == "" ]; then
-            echo "$MASTERUSER ALL = NOPASSWD: `which setquota`" >> /etc/sudoers
+        if [ "$(grep $MASTERUSER /etc/sudoers | grep setquota)" == "" ]; then
+            echo "$MASTERUSER ALL = NOPASSWD: $(which setquota)" >>/etc/sudoers
         fi
 
-        if [ "`grep $MASTERUSER /etc/sudoers | grep repquota`" == "" ]; then
-            echo "$MASTERUSER ALL = NOPASSWD: `which repquota`" >> /etc/sudoers
+        if [ "$(grep $MASTERUSER /etc/sudoers | grep repquota)" == "" ]; then
+            echo "$MASTERUSER ALL = NOPASSWD: $(which repquota)" >>/etc/sudoers
         fi
     fi
 
-    if [ "$INSTALL" == "GS" -a -f /etc/sudoers -a "`grep $MASTERUSER /etc/sudoers | grep temp`" == "" ]; then
-        echo "$MASTERUSER ALL = (ALL, !root:easywi) NOPASSWD: /home/$MASTERUSER/temp/*.sh" >> /etc/sudoers
-        echo "$MASTERUSER ALL = (ALL, !root:easywi) NOPASSWD: /bin/bash /home/$MASTERUSER/temp/*.sh" >> /etc/sudoers
+    if [ "$INSTALL" == "GS" -a -f /etc/sudoers -a "$(grep $MASTERUSER /etc/sudoers | grep temp)" == "" ]; then
+        echo "$MASTERUSER ALL = (ALL, !root:easywi) NOPASSWD: /home/$MASTERUSER/temp/*.sh" >>/etc/sudoers
+        echo "$MASTERUSER ALL = (ALL, !root:easywi) NOPASSWD: /bin/bash /home/$MASTERUSER/temp/*.sh" >>/etc/sudoers
     fi
 
     if [ "$WEBSERVER" == "Nginx" ]; then
-        HTTPDBIN=`which nginx`
+        HTTPDBIN=$(which nginx)
         HTTPDSCRIPT="/etc/init.d/nginx"
     elif [ "$WEBSERVER" == "Lighttpd" ]; then
-        HTTPDBIN=`which lighttpd`
+        HTTPDBIN=$(which lighttpd)
         HTTPDSCRIPT="/etc/init.d/lighttpd"
     elif [ "$WEBSERVER" == "Apache" ]; then
-        HTTPDBIN=`which apache2`
+        HTTPDBIN=$(which apache2)
         HTTPDSCRIPT="/etc/init.d/apache2"
     fi
 
     if [ "$HTTPDBIN" != "" -a -f /etc/sudoers ]; then
-        if [ "`grep $MASTERUSER /etc/sudoers | grep $HTTPDBIN`" == "" ]; then
-            echo "$MASTERUSER ALL = NOPASSWD: $HTTPDBIN" >> /etc/sudoers
+        if [ "$(grep $MASTERUSER /etc/sudoers | grep $HTTPDBIN)" == "" ]; then
+            echo "$MASTERUSER ALL = NOPASSWD: $HTTPDBIN" >>/etc/sudoers
         fi
 
-        if [ "`grep $MASTERUSER /etc/sudoers | grep $HTTPDSCRIPT`" == "" ]; then
-            echo "$MASTERUSER ALL = NOPASSWD: $HTTPDSCRIPT" >> /etc/sudoers
+        if [ "$(grep $MASTERUSER /etc/sudoers | grep $HTTPDSCRIPT)" == "" ]; then
+            echo "$MASTERUSER ALL = NOPASSWD: $HTTPDSCRIPT" >>/etc/sudoers
         fi
 
-        if [ "$PHPINSTALL" == "Yes" -a "$WEBSERVER" == "Nginx" -a "`grep $MASTERUSER /etc/sudoers | grep 'php${USE_PHP_VERSION}-fpm'`" == "" ]; then
+        if [ "$PHPINSTALL" == "Yes" -a "$WEBSERVER" == "Nginx" -a "$(grep $MASTERUSER /etc/sudoers | grep 'php${USE_PHP_VERSION}-fpm')" == "" ]; then
 
-            FPM_BIN=`which php${USE_PHP_VERSION}-fpm`
+            FPM_BIN=$(which php${USE_PHP_VERSION}-fpm)
 
-            echo "$MASTERUSER ALL = NOPASSWD: /etc/init.d/php${USE_PHP_VERSION}-fpm" >> /etc/sudoers
-            echo "$MASTERUSER ALL = NOPASSWD: $FPM_BIN" >> /etc/sudoers
+            echo "$MASTERUSER ALL = NOPASSWD: /etc/init.d/php${USE_PHP_VERSION}-fpm" >>/etc/sudoers
+            echo "$MASTERUSER ALL = NOPASSWD: $FPM_BIN" >>/etc/sudoers
         fi
     fi
 fi
@@ -1152,9 +1209,9 @@ fi
 
 if ([ "$INSTALL" == "GS" -o "$INSTALL" == "WR" ] && [ "$QUOTAINSTALL" == "Yes" ]); then
     greenMessage "The setquota command is:"
-    greenMessage "sudo `which setquota` %cmd%"
+    greenMessage "sudo $(which setquota) %cmd%"
     greenMessage "The repquota command is:"
-    greenMessage "sudo `which repquota` %cmd%"
+    greenMessage "sudo $(which repquota) %cmd%"
 fi
 
 if [ "$INSTALL" == "GS" ]; then
@@ -1163,8 +1220,8 @@ if [ "$INSTALL" == "GS" ]; then
         touch /bin/false
     fi
 
-    if [ "`grep '/bin/false' /etc/shells`" == "" ]; then
-        echo "/bin/false" >> /etc/shells
+    if [ "$(grep '/bin/false' /etc/shells)" == "" ]; then
+        echo "/bin/false" >>/etc/shells
     fi
 
     cyanMessage " "
@@ -1172,17 +1229,17 @@ if [ "$INSTALL" == "GS" ]; then
     OPTIONS=("Yes" "No" "Quit")
     select OPTION in "${OPTIONS[@]}"; do
         case "$REPLY" in
-            1|2 ) break;;
-            3 ) errorAndQuit;;
-            *) errorAndContinue;;
+        1 | 2) break ;;
+        3) errorAndQuit ;;
+        *) errorAndContinue ;;
         esac
     done
 
     if [ "$OPTION" == "Yes" ]; then
 
-        if [ "$OSBRANCH" == "jessie" -a "`grep jessie-backports /etc/apt/sources.list`" == "" ]; then
+        if [ "$OSBRANCH" == "jessie" -a "$(grep jessie-backports /etc/apt/sources.list)" == "" ]; then
             okAndSleep "Adding jessie backports"
-            echo "deb http://ftp.de.debian.org/debian jessie-backports main" >> /etc/apt/sources.list
+            echo "deb http://ftp.de.debian.org/debian jessie-backports main" >>/etc/apt/sources.list
             apt-get update
         fi
 
@@ -1209,20 +1266,21 @@ if [ "$INSTALL" == "GS" ]; then
     chmod -R 750 /home/$MASTERUSER/
     chmod -R 770 /home/$MASTERUSER/logs/ /home/$MASTERUSER/temp/ /home/$MASTERUSER/fdl_data/
 
-    if [ "$OS" == "debian" -a "`uname -m`" == "x86_64" -a "`cat /etc/debian_version | grep '6.'`" == "" ]; then
+    if [ "$OS" == "debian" -a "$(uname -m)" == "x86_64" -a "$(cat /etc/debian_version | grep '6.')" == "" ]; then
         dpkg --add-architecture i386
     fi
 
-    if [ "$OS" == "debian" -o  "$OS" == "ubuntu" ]; then
+    if [ "$OS" == "debian" -o "$OS" == "ubuntu" ]; then
 
         okAndSleep "Installing required packages wput screen bzip2 sudo rsync zip unzip"
         apt-get install wput screen bzip2 sudo rsync zip unzip -y
 
-        if [ "`uname -m`" == "x86_64" ]; then
+        if [ "$(uname -m)" == "x86_64" ]; then
 
             okAndSleep "Installing 32bit support for 64bit systems."
 
-            if ([ "$OS" == "ubuntu" ] || [ "$OS" == "debian" -a "`printf "${OSVERSION}\n8.0" | sort -V | tail -n 1`" == "$OSVERSION" ]); then
+            if ([ "$OS" == "ubuntu" ] || [ "$OS" == "debian" -a "$(printf "${OSVERSION}\n8.0" | sort -V | tail -n 1)" == "$OSVERSION" ]); then
+                echo "problem here"
                 apt-get install zlib1g -y
                 apt-get install lib32z1 -y
                 apt-get install lib32gcc1 -y
@@ -1237,9 +1295,11 @@ if [ "$INSTALL" == "GS" ]; then
                 apt-get install zlib1g:i386 -y
             else
                 apt-get install ia32-libs lib32readline5 lib32ncursesw5 lib32stdc++6 -y
+                echo "The problem is here"
             fi
         else
             apt-get install libreadline5 libncursesw5 -y
+            echo "NO IT'S ACTUALLY HERE"
         fi
     fi
 
@@ -1264,20 +1324,40 @@ if [ "$INSTALL" == "GS" ]; then
 
     chown -R $INSTALLMASTER:$INSTALLMASTER /home/$INSTALLMASTER
 
-    if [ -f /etc/crontab -a "`grep 'Minecraft can easily produce 1GB' /etc/crontab`" == "" ]; then
+    if [ $OS != "Slackware" ]; then
+        if [ -f /etc/crontab -a "$(grep 'Minecraft can easily produce 1GB' /etc/crontab)" == "" ]; then
 
+            if ionice -c3 true 2>/dev/null; then
+                IONICE="ionice -n 7 "
+            fi
+
+            echo "#Minecraft can easily produce 1GB+ logs within one hour" >>/etc/crontab
+            echo "*/5 * * * * root nice -n +19 ionice -n 7 find /home/*/server/*/ -maxdepth 2 -type f -name \"screenlog.0\" -size +100M -delete" >>/etc/crontab
+            echo "# Even sudo /usr/sbin/deluser --remove-all-files is used some data remain from time to time" >>/etc/crontab
+            echo "*/5 * * * * root nice -n +19 $IONICE find /home/ -maxdepth 2 -type d -nouser -delete" >>/etc/crontab
+            echo "*/5 * * * * root nice -n +19 $IONICE find /home/*/fdl_data/ /home/*/temp/ /tmp/ /var/run/screen/ -nouser -print0 | xargs -0 rm -rf" >>/etc/crontab
+            echo "*/5 * * * * root nice -n +19 $IONICE find /var/run/screen/ -maxdepth 1 -type d -nouser -print0 | xargs -0 rm -rf" >>/etc/crontab
+
+            service cron restart
+        fi
+
+    elif [ $OS == "Slackware" ]; then
+
+        if [ ! -f /etc/cron.d/easy-wi ]; then
+            touch /etc/cron.d/easy-wi
+        fi
         if ionice -c3 true 2>/dev/null; then
             IONICE="ionice -n 7 "
         fi
 
-        echo "#Minecraft can easily produce 1GB+ logs within one hour" >> /etc/crontab
-        echo "*/5 * * * * root nice -n +19 ionice -n 7 find /home/*/server/*/ -maxdepth 2 -type f -name \"screenlog.0\" -size +100M -delete" >> /etc/crontab
-        echo "# Even sudo /usr/sbin/deluser --remove-all-files is used some data remain from time to time" >> /etc/crontab
-        echo "*/5 * * * * root nice -n +19 $IONICE find /home/ -maxdepth 2 -type d -nouser -delete" >> /etc/crontab
-        echo "*/5 * * * * root nice -n +19 $IONICE find /home/*/fdl_data/ /home/*/temp/ /tmp/ /var/run/screen/ -nouser -print0 | xargs -0 rm -rf" >> /etc/crontab
-        echo "*/5 * * * * root nice -n +19 $IONICE find /var/run/screen/ -maxdepth 1 -type d -nouser -print0 | xargs -0 rm -rf" >> /etc/crontab
+        echo "#Minecraft can easily produce 1GB+ logs within one hour" >>/etc/cron.d/easy-wi
+        echo "*/5 * * * * root nice -n +19 ionice -n 7 find /home/*/server/*/ -maxdepth 2 -type f -name \"screenlog.0\" -size +100M -delete" >>/etc/cron.d/easy-wi
+        echo "# Even sudo /usr/sbin/deluser --remove-all-files is used some data remain from time to time" >>/etc/cron.d/easy-wi
+        echo "*/5 * * * * root nice -n +19 $IONICE find /home/ -maxdepth 2 -type d -nouser -delete" >>/etc/cron.d/easy-wi
+        echo "*/5 * * * * root nice -n +19 $IONICE find /home/*/fdl_data/ /home/*/temp/ /tmp/ /var/run/screen/ -nouser -print0 | xargs -0 rm -rf" >>/etc/cron.d/easy-wi
+        echo "*/5 * * * * root nice -n +19 $IONICE find /var/run/screen/ -maxdepth 1 -type d -nouser -print0 | xargs -0 rm -rf" >>/etc/cron.d/easy-wi
 
-        service cron restart
+        /etc/rc.d/rc.crond restart
     fi
 fi
 
@@ -1290,18 +1370,18 @@ if [ "$INSTALL" == "EW" ]; then
         OPTIONS=("Yes" "Quit")
         select OPTION in "${OPTIONS[@]}"; do
             case "$REPLY" in
-                1 ) break;;
-                2 ) errorAndQuit;;
-                *) errorAndContinue;;
+            1) break ;;
+            2) errorAndQuit ;;
+            *) errorAndContinue ;;
             esac
         done
 
         rm -rf /home/easywi_web/htdocs/*
     fi
 
-    if [ "`id easywi_web 2> /dev/null`" == "" -a ! -d /home/easywi_web ]; then
+    if [ "$(id easywi_web 2>/dev/null)" == "" -a ! -d /home/easywi_web ]; then
         $USERADD -md /home/easywi_web -g www-data -s /bin/bash -k /home/$MASTERUSER/skel/ easywi_web
-    elif [ "`id easywi_web 2> /dev/null`" == "" -a -d /home/easywi_web ]; then
+    elif [ "$(id easywi_web 2>/dev/null)" == "" -a -d /home/easywi_web ]; then
         $USERADD -d /home/easywi_web -g www-data -s /bin/bash easywi_web
     fi
 
@@ -1311,7 +1391,7 @@ if [ "$INSTALL" == "EW" ]; then
     makeDir /home/easywi_web/session/
     chown -R easywi_web:$WEBGROUPID /home/easywi_web/htdocs/ /home/easywi_web/logs/ /home/easywi_web/tmp/ /home/easywi_web/session/
 
-    if [ "`id easywi_web 2> /dev/null`" == "" ]; then
+    if [ "$(id easywi_web 2>/dev/null)" == "" ]; then
         errorAndExit "Web user easywi_web does not exists! Exiting now!"
     fi
 
@@ -1326,9 +1406,9 @@ if [ "$INSTALL" == "EW" ]; then
     okAndSleep "Downloading latest Easy-WI ${RELEASE_TYPE} version."
 
     if [ "${RELEASE_TYPE}" == "Stable" ]; then
-        DOWNLOAD_URL=`wget -q --timeout=60 -O - https://api.github.com/repos/easy-wi/developer/releases/latest | grep -Po '(?<="zipball_url": ")([\w:/\-.]+)'`
+        DOWNLOAD_URL=$(wget -q --timeout=60 -O - https://api.github.com/repos/easy-wi/developer/releases/latest | grep -Po '(?<="zipball_url": ")([\w:/\-.]+)')
     else
-        DOWNLOAD_URL=`wget -q --timeout=60 -O - https://api.github.com/repos/easy-wi/developer/tags | grep -Po '(?<="zipball_url": ")([\w:/\-.]+)' | head -n 1`
+        DOWNLOAD_URL=$(wget -q --timeout=60 -O - https://api.github.com/repos/easy-wi/developer/tags | grep -Po '(?<="zipball_url": ")([\w:/\-.]+)' | head -n 1)
     fi
 
     curl -L ${DOWNLOAD_URL} -o web.zip
@@ -1341,7 +1421,7 @@ if [ "$INSTALL" == "EW" ]; then
     unzip -u web.zip >/dev/null 2>&1
     removeIfExists web.zip
 
-    HEX_FOLDER=`ls | grep 'easy-wi-developer-' | head -n 1`
+    HEX_FOLDER=$(ls | grep 'easy-wi-developer-' | head -n 1)
 
     if [ "${HEX_FOLDER}" != "" ]; then
         mv ${HEX_FOLDER}/* ./
@@ -1353,7 +1433,7 @@ if [ "$INSTALL" == "EW" ]; then
 
     chown -R easywi_web:www-data /home/easywi_web
 
-    DB_PASSWORD=`< /dev/urandom tr -dc A-Za-z0-9 | head -c18`
+    DB_PASSWORD=$(tr </dev/urandom -dc A-Za-z0-9 | head -c18)
 
     okAndSleep "Creating database easy_wi and connected user easy_wi"
     mysql -uroot -p$MYSQL_ROOT_PASSWORD -Bse "CREATE DATABASE IF NOT EXISTS easy_wi; GRANT ALL ON easy_wi.* TO 'easy_wi'@'localhost' IDENTIFIED BY '$DB_PASSWORD'; FLUSH PRIVILEGES;"
@@ -1363,9 +1443,9 @@ if [ "$INSTALL" == "EW" ]; then
     OPTIONS=("Yes" "No" "Quit")
     select SSL in "${OPTIONS[@]}"; do
         case "$REPLY" in
-            1|2 ) break;;
-            3 ) errorAndQuit;;
-            *) errorAndContinue;;
+        1 | 2) break ;;
+        3) errorAndQuit ;;
+        *) errorAndContinue ;;
         esac
     done
 
@@ -1391,27 +1471,27 @@ if [ "$INSTALL" == "EW" ]; then
         makeDir /home/$MASTERUSER/fpm-pool.d/
         FILE_NAME_POOL=/home/$MASTERUSER/fpm-pool.d/$FILE_NAME.conf
 
-        echo "[$IP_DOMAIN]" > $FILE_NAME_POOL
-        echo "user = easywi_web" >> $FILE_NAME_POOL
-        echo "group = www-data" >> $FILE_NAME_POOL
-        echo "listen = ${PHP_SOCKET}" >> $FILE_NAME_POOL
-        echo "listen.owner = easywi_web" >> $FILE_NAME_POOL
-        echo "listen.group = www-data" >> $FILE_NAME_POOL
-        echo "pm = dynamic" >> $FILE_NAME_POOL
-        echo "pm.max_children = 1" >> $FILE_NAME_POOL
-        echo "pm.start_servers = 1" >> $FILE_NAME_POOL
-        echo "pm.min_spare_servers = 1" >> $FILE_NAME_POOL
-        echo "pm.max_spare_servers = 1" >> $FILE_NAME_POOL
-        echo "pm.max_requests = 500" >> $FILE_NAME_POOL
-        echo "chdir = /" >> $FILE_NAME_POOL
-        echo "access.log = /home/easywi_web/logs/fpm-access.log" >> $FILE_NAME_POOL
-        echo "php_flag[display_errors] = off" >> $FILE_NAME_POOL
-        echo "php_admin_flag[log_errors] = on" >> $FILE_NAME_POOL
-        echo "php_admin_value[error_log] = /home/easywi_web/logs/fpm-error.log" >> $FILE_NAME_POOL
-        echo "php_admin_value[memory_limit] = 32M" >> $FILE_NAME_POOL
-        echo "php_admin_value[open_basedir] = /home/easywi_web/htdocs/:/home/easywi_web/tmp/" >> $FILE_NAME_POOL
-        echo "php_admin_value[upload_tmp_dir] = /home/easywi_web/tmp" >> $FILE_NAME_POOL
-        echo "php_admin_value[session.save_path] = /home/easywi_web/session" >> $FILE_NAME_POOL
+        echo "[$IP_DOMAIN]" >$FILE_NAME_POOL
+        echo "user = easywi_web" >>$FILE_NAME_POOL
+        echo "group = www-data" >>$FILE_NAME_POOL
+        echo "listen = ${PHP_SOCKET}" >>$FILE_NAME_POOL
+        echo "listen.owner = easywi_web" >>$FILE_NAME_POOL
+        echo "listen.group = www-data" >>$FILE_NAME_POOL
+        echo "pm = dynamic" >>$FILE_NAME_POOL
+        echo "pm.max_children = 1" >>$FILE_NAME_POOL
+        echo "pm.start_servers = 1" >>$FILE_NAME_POOL
+        echo "pm.min_spare_servers = 1" >>$FILE_NAME_POOL
+        echo "pm.max_spare_servers = 1" >>$FILE_NAME_POOL
+        echo "pm.max_requests = 500" >>$FILE_NAME_POOL
+        echo "chdir = /" >>$FILE_NAME_POOL
+        echo "access.log = /home/easywi_web/logs/fpm-access.log" >>$FILE_NAME_POOL
+        echo "php_flag[display_errors] = off" >>$FILE_NAME_POOL
+        echo "php_admin_flag[log_errors] = on" >>$FILE_NAME_POOL
+        echo "php_admin_value[error_log] = /home/easywi_web/logs/fpm-error.log" >>$FILE_NAME_POOL
+        echo "php_admin_value[memory_limit] = 32M" >>$FILE_NAME_POOL
+        echo "php_admin_value[open_basedir] = /home/easywi_web/htdocs/:/home/easywi_web/tmp/" >>$FILE_NAME_POOL
+        echo "php_admin_value[upload_tmp_dir] = /home/easywi_web/tmp" >>$FILE_NAME_POOL
+        echo "php_admin_value[session.save_path] = /home/easywi_web/session" >>$FILE_NAME_POOL
 
         chown $MASTERUSER:www-data $FILE_NAME_POOL
     fi
@@ -1419,59 +1499,59 @@ if [ "$INSTALL" == "EW" ]; then
     FILE_NAME_VHOST=/home/$MASTERUSER/sites-enabled/$FILE_NAME
 
     if [ "$WEBSERVER" == "Nginx" ]; then
-        echo 'server {' > $FILE_NAME_VHOST
-        echo '    listen 80;' >> $FILE_NAME_VHOST
+        echo 'server {' >$FILE_NAME_VHOST
+        echo '    listen 80;' >>$FILE_NAME_VHOST
 
         if [ "$SSL" == "Yes" ]; then
 
-            echo "    server_name $IP_DOMAIN;" >> $FILE_NAME_VHOST
-            echo "    return 301 https://$IP_DOMAIN"'$request_uri;' >> $FILE_NAME_VHOST
-            echo '}' >> $FILE_NAME_VHOST
+            echo "    server_name $IP_DOMAIN;" >>$FILE_NAME_VHOST
+            echo "    return 301 https://$IP_DOMAIN"'$request_uri;' >>$FILE_NAME_VHOST
+            echo '}' >>$FILE_NAME_VHOST
 
             backUpFile /etc/nginx/nginx.conf
 
-            if [ "`grep 'ssl_ecdh_curve secp384r1;' /etc/nginx/nginx.conf`" == "" ]; then
+            if [ "$(grep 'ssl_ecdh_curve secp384r1;' /etc/nginx/nginx.conf)" == "" ]; then
                 sed -i '/ssl_prefer_server_ciphers on;/a \\tssl_ecdh_curve secp384r1;' /etc/nginx/nginx.conf
             fi
-            if [ "`grep 'ssl_session_cache' /etc/nginx/nginx.conf`" == "" ]; then
+            if [ "$(grep 'ssl_session_cache' /etc/nginx/nginx.conf)" == "" ]; then
                 sed -i '/ssl_prefer_server_ciphers on;/a \\tssl_session_cache shared:SSL:10m;' /etc/nginx/nginx.conf
             fi
-            if [ "`grep 'ssl_session_timeout' /etc/nginx/nginx.conf`" == "" ]; then
+            if [ "$(grep 'ssl_session_timeout' /etc/nginx/nginx.conf)" == "" ]; then
                 sed -i '/ssl_prefer_server_ciphers on;/a \\tssl_session_timeout 10m;' /etc/nginx/nginx.conf
             fi
-            if [ "`grep 'ssl_ciphers' /etc/nginx/nginx.conf`" == "" ]; then
+            if [ "$(grep 'ssl_ciphers' /etc/nginx/nginx.conf)" == "" ]; then
                 sed -i '/ssl_prefer_server_ciphers on;/a \\tssl_ciphers EECDH+AESGCM:EDH+AESGCM:EECDH:EDH:!MD5:!RC4:!LOW:!MEDIUM:!CAMELLIA:!ECDSA:!DES:!DSS:!3DES:!NULL;' /etc/nginx/nginx.conf
             fi
 
-            echo 'server {' >> $FILE_NAME_VHOST
-            echo '    listen 443 ssl;' >> $FILE_NAME_VHOST
-            echo "    ssl_certificate /etc/nginx/ssl/$FILE_NAME.crt;" >> $FILE_NAME_VHOST
-            echo "    ssl_certificate_key /etc/nginx/ssl/$FILE_NAME.key;" >> $FILE_NAME_VHOST
+            echo 'server {' >>$FILE_NAME_VHOST
+            echo '    listen 443 ssl;' >>$FILE_NAME_VHOST
+            echo "    ssl_certificate /etc/nginx/ssl/$FILE_NAME.crt;" >>$FILE_NAME_VHOST
+            echo "    ssl_certificate_key /etc/nginx/ssl/$FILE_NAME.key;" >>$FILE_NAME_VHOST
         fi
 
-        echo '    root /home/easywi_web/htdocs/;' >> $FILE_NAME_VHOST
-        echo '    index index.html index.htm index.php;' >> $FILE_NAME_VHOST
-        echo "    server_name $IP_DOMAIN;" >> $FILE_NAME_VHOST
-        echo '    location ~ /(keys|stuff|template|languages|downloads|tmp) { deny all; }' >> $FILE_NAME_VHOST
-        echo '    location / {' >> $FILE_NAME_VHOST
-        echo '        try_files $uri $uri/ =404;' >> $FILE_NAME_VHOST
-        echo '    }' >> $FILE_NAME_VHOST
-        echo '    location ~ \.php$ {' >> $FILE_NAME_VHOST
-        echo '        fastcgi_split_path_info ^(.+\.php)(/.+)$;' >> $FILE_NAME_VHOST
-        echo '        try_files $fastcgi_script_name =404;' >> $FILE_NAME_VHOST
-        echo '        set $path_info $fastcgi_path_info;' >> $FILE_NAME_VHOST
-        echo '        fastcgi_param PATH_INFO $path_info;' >> $FILE_NAME_VHOST
-        echo '        fastcgi_index index.php;' >> $FILE_NAME_VHOST
+        echo '    root /home/easywi_web/htdocs/;' >>$FILE_NAME_VHOST
+        echo '    index index.html index.htm index.php;' >>$FILE_NAME_VHOST
+        echo "    server_name $IP_DOMAIN;" >>$FILE_NAME_VHOST
+        echo '    location ~ /(keys|stuff|template|languages|downloads|tmp) { deny all; }' >>$FILE_NAME_VHOST
+        echo '    location / {' >>$FILE_NAME_VHOST
+        echo '        try_files $uri $uri/ =404;' >>$FILE_NAME_VHOST
+        echo '    }' >>$FILE_NAME_VHOST
+        echo '    location ~ \.php$ {' >>$FILE_NAME_VHOST
+        echo '        fastcgi_split_path_info ^(.+\.php)(/.+)$;' >>$FILE_NAME_VHOST
+        echo '        try_files $fastcgi_script_name =404;' >>$FILE_NAME_VHOST
+        echo '        set $path_info $fastcgi_path_info;' >>$FILE_NAME_VHOST
+        echo '        fastcgi_param PATH_INFO $path_info;' >>$FILE_NAME_VHOST
+        echo '        fastcgi_index index.php;' >>$FILE_NAME_VHOST
 
         if [ -f /etc/nginx/fastcgi.conf ]; then
-            echo '        include /etc/nginx/fastcgi.conf;' >> $FILE_NAME_VHOST
+            echo '        include /etc/nginx/fastcgi.conf;' >>$FILE_NAME_VHOST
         elif [ -f /etc/nginx/fastcgi_params ]; then
-            echo '        include /etc/nginx/fastcgi_params;' >> $FILE_NAME_VHOST
+            echo '        include /etc/nginx/fastcgi_params;' >>$FILE_NAME_VHOST
         fi
 
-        echo "        fastcgi_pass unix:${PHP_SOCKET};" >> $FILE_NAME_VHOST
-        echo '    }' >> $FILE_NAME_VHOST
-        echo '}' >> $FILE_NAME_VHOST
+        echo "        fastcgi_pass unix:${PHP_SOCKET};" >>$FILE_NAME_VHOST
+        echo '    }' >>$FILE_NAME_VHOST
+        echo '}' >>$FILE_NAME_VHOST
 
         chown -R $MASTERUSER:$WEBGROUPID /home/$MASTERUSER/
 
@@ -1483,67 +1563,66 @@ if [ "$INSTALL" == "EW" ]; then
 
         FILE_NAME_VHOST="$FILE_NAME_VHOST.conf"
 
-        echo '<VirtualHost *:80>' > $FILE_NAME_VHOST
-        echo "    ServerName $IP_DOMAIN" >> $FILE_NAME_VHOST
-        echo "    ServerAdmin info@$IP_DOMAIN" >> $FILE_NAME_VHOST
+        echo '<VirtualHost *:80>' >$FILE_NAME_VHOST
+        echo "    ServerName $IP_DOMAIN" >>$FILE_NAME_VHOST
+        echo "    ServerAdmin info@$IP_DOMAIN" >>$FILE_NAME_VHOST
 
         if [ "$SSL" == "Yes" ]; then
 
-            echo "    Redirect permanent / https://$IP_DOMAIN/" >> $FILE_NAME_VHOST
-            echo '</VirtualHost>' >> $FILE_NAME_VHOST
+            echo "    Redirect permanent / https://$IP_DOMAIN/" >>$FILE_NAME_VHOST
+            echo '</VirtualHost>' >>$FILE_NAME_VHOST
 
             okAndSleep "Activating TLS/SSL related Apache modules."
             a2enmod ssl
             service apache2 restart
 
-            echo '<VirtualHost *:443>' >> $FILE_NAME_VHOST
-            echo "    ServerName $IP_DOMAIN" >> $FILE_NAME_VHOST
-            echo '    SSLEngine on' >> $FILE_NAME_VHOST
-            echo "    SSLCertificateFile /etc/apache2/ssl/$FILE_NAME.crt" >> $FILE_NAME_VHOST
-            echo "    SSLCertificateKeyFile /etc/apache2/ssl/$FILE_NAME.key" >> $FILE_NAME_VHOST
+            echo '<VirtualHost *:443>' >>$FILE_NAME_VHOST
+            echo "    ServerName $IP_DOMAIN" >>$FILE_NAME_VHOST
+            echo '    SSLEngine on' >>$FILE_NAME_VHOST
+            echo "    SSLCertificateFile /etc/apache2/ssl/$FILE_NAME.crt" >>$FILE_NAME_VHOST
+            echo "    SSLCertificateKeyFile /etc/apache2/ssl/$FILE_NAME.key" >>$FILE_NAME_VHOST
 
         fi
 
-
-        echo '    DocumentRoot "/home/easywi_web/htdocs/"' >> $FILE_NAME_VHOST
-        echo '    ErrorLog "/home/easywi_web/logs/error.log"' >> $FILE_NAME_VHOST
-        echo '    CustomLog "/home/easywi_web/logs/access.log" common' >> $FILE_NAME_VHOST
-        echo '    DirectoryIndex index.php index.html' >> $FILE_NAME_VHOST
-        echo '    <IfModule mpm_itk_module>' >> $FILE_NAME_VHOST
-        echo '       AssignUserId easywi_web www-data' >> $FILE_NAME_VHOST
-        echo '       MaxClientsVHost 50' >> $FILE_NAME_VHOST
-        echo '       NiceValue 10' >> $FILE_NAME_VHOST
-        echo '       php_admin_flag allow_url_include off' >> $FILE_NAME_VHOST
-        echo '       php_admin_flag display_errors off' >> $FILE_NAME_VHOST
-        echo '       php_admin_flag log_errors on' >> $FILE_NAME_VHOST
-        echo '       php_admin_flag mod_rewrite on' >> $FILE_NAME_VHOST
-        echo '       php_admin_value open_basedir "/home/easywi_web/htdocs/:/home/easywi_web/tmp"' >> $FILE_NAME_VHOST
-        echo '       php_admin_value session.save_path "/home/easywi_web/session"' >> $FILE_NAME_VHOST
-        echo '       php_admin_value upload_tmp_dir "/home/easywi_web/tmp"' >> $FILE_NAME_VHOST
-        echo '       php_admin_value upload_max_size 32M' >> $FILE_NAME_VHOST
-        echo '       php_admin_value memory_limit 32M' >> $FILE_NAME_VHOST
-        echo '    </IfModule>' >> $FILE_NAME_VHOST
-        echo '    <Directory /home/easywi_web/htdocs/>' >> $FILE_NAME_VHOST
-        echo '        Options -Indexes +FollowSymLinks +Includes' >> $FILE_NAME_VHOST
-        echo '        AllowOverride None' >> $FILE_NAME_VHOST
-        echo '        <IfVersion >= 2.4>' >> $FILE_NAME_VHOST
-        echo '            Require all granted' >> $FILE_NAME_VHOST
-        echo '        </IfVersion>' >> $FILE_NAME_VHOST
-        echo '        <IfVersion < 2.4>' >> $FILE_NAME_VHOST
-        echo '            Order allow,deny' >> $FILE_NAME_VHOST
-        echo '            Allow from all' >> $FILE_NAME_VHOST
-        echo '        </IfVersion>' >> $FILE_NAME_VHOST
-        echo '    </Directory>' >> $FILE_NAME_VHOST
-        echo '    <LocationMatch "/(keys|stuff|template|languages|downloads|tmp)">' >> $FILE_NAME_VHOST
-        echo '        <IfVersion >= 2.4>' >> $FILE_NAME_VHOST
-        echo '            Require all denied' >> $FILE_NAME_VHOST
-        echo '        </IfVersion>' >> $FILE_NAME_VHOST
-        echo '        <IfVersion < 2.4>' >> $FILE_NAME_VHOST
-        echo '            Order deny,allow' >> $FILE_NAME_VHOST
-        echo '            Deny  from all' >> $FILE_NAME_VHOST
-        echo '        </IfVersion>' >> $FILE_NAME_VHOST
-        echo '    </LocationMatch>' >> $FILE_NAME_VHOST
-        echo '</VirtualHost>' >> $FILE_NAME_VHOST
+        echo '    DocumentRoot "/home/easywi_web/htdocs/"' >>$FILE_NAME_VHOST
+        echo '    ErrorLog "/home/easywi_web/logs/error.log"' >>$FILE_NAME_VHOST
+        echo '    CustomLog "/home/easywi_web/logs/access.log" common' >>$FILE_NAME_VHOST
+        echo '    DirectoryIndex index.php index.html' >>$FILE_NAME_VHOST
+        echo '    <IfModule mpm_itk_module>' >>$FILE_NAME_VHOST
+        echo '       AssignUserId easywi_web www-data' >>$FILE_NAME_VHOST
+        echo '       MaxClientsVHost 50' >>$FILE_NAME_VHOST
+        echo '       NiceValue 10' >>$FILE_NAME_VHOST
+        echo '       php_admin_flag allow_url_include off' >>$FILE_NAME_VHOST
+        echo '       php_admin_flag display_errors off' >>$FILE_NAME_VHOST
+        echo '       php_admin_flag log_errors on' >>$FILE_NAME_VHOST
+        echo '       php_admin_flag mod_rewrite on' >>$FILE_NAME_VHOST
+        echo '       php_admin_value open_basedir "/home/easywi_web/htdocs/:/home/easywi_web/tmp"' >>$FILE_NAME_VHOST
+        echo '       php_admin_value session.save_path "/home/easywi_web/session"' >>$FILE_NAME_VHOST
+        echo '       php_admin_value upload_tmp_dir "/home/easywi_web/tmp"' >>$FILE_NAME_VHOST
+        echo '       php_admin_value upload_max_size 32M' >>$FILE_NAME_VHOST
+        echo '       php_admin_value memory_limit 32M' >>$FILE_NAME_VHOST
+        echo '    </IfModule>' >>$FILE_NAME_VHOST
+        echo '    <Directory /home/easywi_web/htdocs/>' >>$FILE_NAME_VHOST
+        echo '        Options -Indexes +FollowSymLinks +Includes' >>$FILE_NAME_VHOST
+        echo '        AllowOverride None' >>$FILE_NAME_VHOST
+        echo '        <IfVersion >= 2.4>' >>$FILE_NAME_VHOST
+        echo '            Require all granted' >>$FILE_NAME_VHOST
+        echo '        </IfVersion>' >>$FILE_NAME_VHOST
+        echo '        <IfVersion < 2.4>' >>$FILE_NAME_VHOST
+        echo '            Order allow,deny' >>$FILE_NAME_VHOST
+        echo '            Allow from all' >>$FILE_NAME_VHOST
+        echo '        </IfVersion>' >>$FILE_NAME_VHOST
+        echo '    </Directory>' >>$FILE_NAME_VHOST
+        echo '    <LocationMatch "/(keys|stuff|template|languages|downloads|tmp)">' >>$FILE_NAME_VHOST
+        echo '        <IfVersion >= 2.4>' >>$FILE_NAME_VHOST
+        echo '            Require all denied' >>$FILE_NAME_VHOST
+        echo '        </IfVersion>' >>$FILE_NAME_VHOST
+        echo '        <IfVersion < 2.4>' >>$FILE_NAME_VHOST
+        echo '            Order deny,allow' >>$FILE_NAME_VHOST
+        echo '            Deny  from all' >>$FILE_NAME_VHOST
+        echo '        </IfVersion>' >>$FILE_NAME_VHOST
+        echo '    </LocationMatch>' >>$FILE_NAME_VHOST
+        echo '</VirtualHost>' >>$FILE_NAME_VHOST
 
         okAndSleep "Restarting Apache2."
         service apache2 restart
@@ -1551,13 +1630,13 @@ if [ "$INSTALL" == "EW" ]; then
 
     chown $MASTERUSER:www-data $FILE_NAME_VHOST
 
-    if [ "`grep reboot.php /etc/crontab`" == "" ]; then
+    if [ "$(grep reboot.php /etc/crontab)" == "" ]; then
         echo '0 */1 * * * easywi_web cd /home/easywi_web/htdocs && timeout 300 php ./reboot.php >/dev/null 2>&1
 0 */1 * * * easywi_web cd /home/easywi_web/htdocs && timeout 300 php ./reboot.php >/dev/null 2>&1
 */5 * * * * easywi_web cd /home/easywi_web/htdocs && timeout 290 php ./statuscheck.php >/dev/null 2>&1
 */1 * * * * easywi_web cd /home/easywi_web/htdocs && timeout 290 php ./startupdates.php >/dev/null 2>&1
 */5 * * * * easywi_web cd /home/easywi_web/htdocs && timeout 290 php ./jobs.php >/dev/null 2>&1
-*/10 * * * * easywi_web cd /home/easywi_web/htdocs && timeout 290 php ./cloud.php >/dev/null 2>&1' >> /etc/crontab
+*/10 * * * * easywi_web cd /home/easywi_web/htdocs && timeout 290 php ./cloud.php >/dev/null 2>&1' >>/etc/crontab
     fi
 
     service cron restart
@@ -1599,14 +1678,14 @@ if [ "$INSTALL" == "VS" ]; then
     fi
 
     if [ -f $QUERY_WHITLIST_TXT ]; then
-    
-        if [ "`grep '127.0.0.1' $QUERY_WHITLIST_TXT`" == "" ]; then
-            echo "127.0.0.1" >> $QUERY_WHITLIST_TXT
+
+        if [ "$(grep '127.0.0.1' $QUERY_WHITLIST_TXT)" == "" ]; then
+            echo "127.0.0.1" >>$QUERY_WHITLIST_TXT
         fi
 
         if [ "$LOCAL_IP" != "" ]; then
-            if [ "`grep -E '\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b' <<< $LOCAL_IP`" != "" -a "`grep $LOCAL_IP $QUERY_WHITLIST_TXT`" == "" ]; then
-                echo $LOCAL_IP >> $QUERY_WHITLIST_TXT
+            if [ "$(grep -E '\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b' <<<$LOCAL_IP)" != "" -a "$(grep $LOCAL_IP $QUERY_WHITLIST_TXT)" == "" ]; then
+                echo $LOCAL_IP >>$QUERY_WHITLIST_TXT
             fi
         fi
 
@@ -1615,15 +1694,15 @@ if [ "$INSTALL" == "VS" ]; then
         read IP_ADDRESS
 
         if [ "$IP_ADDRESS" != "" ]; then
-            if [ "`grep -E '\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b' <<< $IP_ADDRESS`" != "" -a "`grep $IP_ADDRESS $QUERY_WHITLIST_TXT`" == "" ]; then
-                echo $IP_ADDRESS >> $QUERY_WHITLIST_TXT
+            if [ "$(grep -E '\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b' <<<$IP_ADDRESS)" != "" -a "$(grep $IP_ADDRESS $QUERY_WHITLIST_TXT)" == "" ]; then
+                echo $IP_ADDRESS >>$QUERY_WHITLIST_TXT
             fi
         fi
     else
         redMessage "Cannot edit the file $QUERY_WHITLIST_TXT, please maintain it manually."
     fi
 
-    QUERY_PASSWORD=`< /dev/urandom tr -dc A-Za-z0-9 | head -c12`
+    QUERY_PASSWORD=$(tr </dev/urandom -dc A-Za-z0-9 | head -c12)
 
     greenMessage "Starting the TS3 server for the first time and shutting it down again as the password will be visible in the process tree."
     su -c "./ts3server_startscript.sh start serveradmin_password=$QUERY_PASSWORD createinifile=1 inifile=ts3server.ini" $MASTERUSER
@@ -1634,8 +1713,11 @@ if [ "$INSTALL" == "VS" ]; then
     su -c "./ts3server_startscript.sh start inifile=ts3server.ini" $MASTERUSER
 fi
 
-okAndSleep "Removing not needed packages."
-apt-get autoremove -y
+## apt-get doesn't exist on slackware
+if [ $OS != "Slackware" ]; then
+    okAndSleep "Removing not needed packages."
+    apt-get autoremove -y
+fi
 
 if [ "$INSTALL" == "EW" ]; then
 
