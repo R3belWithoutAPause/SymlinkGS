@@ -26,7 +26,7 @@ function gsTasks() {
         echo "Server will be running map: $MAP"
 
         if [ "$GAME" == "L4D" ] || [ "$GAME" == "L4D2" ]; then
-            cp -rsa "$MASTER_DIR"/* "$GS_DIR"
+            cp -rsa "$MS_DIR"/* "$GS_DIR"
             unlink "$GS_DIR"/srcds_run
             unlink "$GS_DIR"/control.sh
             unlink "$GS_DIR"/"$GAMETYPE"/host.txt
@@ -38,18 +38,29 @@ function gsTasks() {
             fi
             unlink "$GS_DIR"/"$GAMETYPE"/cfg/server.cfg
             unlink "$GS_DIR"/"$GAMETYPE"/cfg/autoexec.cfg
-            cp "$MASTER_DIR"/srcds_run "$GS_DIR"
-            cp "$MASTER_DIR"/control.sh "$GS_DIR"
-            cp "$MASTER_DIR"/"$GAMETYPE"/host.txt "$GS_DIR"/"$GAMETYPE"
-            cp "$MASTER_DIR"/"$GAMETYPE"/modelsounds.cache "$GS_DIR"/"$GAMETYPE"
-            cp "$MASTER_DIR"/"$GAMETYPE"/motd.txt "$GS_DIR"/"$GAMETYPE"
-            cp "$MASTER_DIR"/"$GAMETYPE"/scene.cache "$GS_DIR"/"$GAMETYPE"
+            cp "$MS_DIR"/srcds_run "$GS_DIR"
+            cp "$MS_DIR"/control.sh "$GS_DIR"
+            cp "$MS_DIR"/"$GAMETYPE"/host.txt "$GS_DIR"/"$GAMETYPE"
+            cp "$MS_DIR"/"$GAMETYPE"/modelsounds.cache "$GS_DIR"/"$GAMETYPE"
+            cp "$MS_DIR"/"$GAMETYPE"/motd.txt "$GS_DIR"/"$GAMETYPE"
+            cp "$MS_DIR"/"$GAMETYPE"/scene.cache "$GS_DIR"/"$GAMETYPE"
             if [ "$GAME" = "L4D2" ]; then
-                cp "$MASTER_DIR"/"$GAMETYPE"/cfg/addonconfig.cfg "$GS_DIR"/"$GAMETYPE"/cfg
+                cp "$MS_DIR"/"$GAMETYPE"/cfg/addonconfig.cfg "$GS_DIR"/"$GAMETYPE"/cfg
             fi
-            cp "$MASTER_DIR"/"$GAMETYPE"/cfg/server.cfg "$GS_DIR"/"$GAMETYPE"/cfg
-            cp "$MASTER_DIR"/"$GAMETYPE"/cfg/autoexec.cfg "$GS_DIR"/"$GAMETYPE"/cfg
+            cp "$MS_DIR"/"$GAMETYPE"/cfg/server.cfg "$GS_DIR"/"$GAMETYPE"/cfg
+            cp "$MS_DIR"/"$GAMETYPE"/cfg/autoexec.cfg "$GS_DIR"/"$GAMETYPE"/cfg
         fi
+
+        ## Now we will use SED to configure control.sh and srcds_run
+
+        sed -i '/export LD_LIBRARY_PATH=".:bin:$LD_LIBRARY_PATH"/c\export LD_LIBRARY_PATH='"$INSTALL_DIR"'/'"$PORT"':'"$INSTALL_DIR"'/'"$PORT"'/bin.:bin:$LD_LIBRARY_PATH"' $INSTALL_DIR/$PORT/srcds_run
+        sed -i '/PARAMS="-game left4dead2 +ip $IP -port $PORT +clientport $CLIENTPORT +map $MAP -nohltv -strictportbind -debug -condebug -console"/c\PARAMS="-game left4dead2 +ip '"$IP"' -port '"$PORT"' +clientport '"$CLIENTPORT"' +map '"$MAP"' -nohltv -strictportbind -debug -condebug -console"' $INSTALL_DIR/$PORT/control.sh
+        sed -i '/DIR=/home/servers/servers/left4dead2/$PORT/c\DIR=/home/servers/servers/left4dead2/'"$PORT"'' $INSTALL_DIR/$PORT/control.sh
+        sed 's/PORT=/PORT=$PORT/' $INSTALL_DIR/$PORT/control.sh
+        sed 's/CLIENTPORT=/CLIENTPORT=$CLIENTPORT/' $INSTALL_DIR/$PORT/control.sh
+        sed 's/MAP=/MAP=$MAP/' $INSTALL_DIR/$PORT/control.sh
+        sed 's/NAME=/NAME=L4D2_$PORT/' $INSTALL_DIR/$PORT/control.sh
+
         exit 0
 
     ## Killing Floor 2 gameserver tasks here
@@ -72,7 +83,7 @@ function masterServer() {
         mkdir "/home/servers/steamcmd"
         cd "/home/servers/steamcmd" || exit
         curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" | tar zxvf -
-        ./steamcmd.sh
+        ./steamcmd.sh +quit
         quit
     fi
 
@@ -150,7 +161,6 @@ function getTask() {
                 GAME="KF2"
                 MS_DIR="/home/servers/master/kf2"
                 APPID="232130"
-                #masterServer $MS_DIR $APPID $GAME
             fi
 
         elif [ $SUB_TASK == "GS" ]; then
@@ -185,12 +195,51 @@ function getTask() {
                     return
                 fi
 
-                echo "$PORT"
-                echo "$FOLDER"
-                echo "$FOLDERS"
+                ## Choose a map for when we install the server
+                OPTIONS=("Dead Center" "Dark Carnival" "Swamp Fever" "Hard Rain" "The Parish" "The Passing" "The Sacrifice" "No Mercy" "Death Toll" "Dead Air" "Blood Harvest" "Cold Stream" "Crash Course" "Quit")
+                select OPTION in "${OPTIONS[@]}"; do
+                    case "$REPLY" in
+                    1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13) break ;;
+                    14) errorAndQuit ;;
+                    *) errorAndContinue ;;
+                    esac
+                done
+
+                ## Setting map variable for when we install the server
+                if [ "$OPTION" == "Dead Center" ]; then
+                    MAP="c1m1_hotel"
+                elif [ "$OPTION" == "Dark Carnival" ]; then
+                    MAP="c2m1_highway"
+                elif [ "$OPTION" == "Swamp Fever" ]; then
+                    MAP="c3m1_plankcountry"
+                elif [ "$OPTION" == "Hard Rain" ]; then
+                    MAP="c4m1_milltown_a"
+                elif [ "$OPTION" == "The Parish" ]; then
+                    MAP="c5m1_waterfront"
+                elif [ "$OPTION" == "The Passing" ]; then
+                    MAP="c6m1_riverbank"
+                elif [ "$OPTION" == "The Sacrifice" ]; then
+                    MAP="c7m1_docks"
+                elif [ "$OPTION" == "No Mercy" ]; then
+                    MAP="c8m1_apartment"
+                elif [ "$OPTION" == "Death Toll" ]; then
+                    MAP="c10m1_caves"
+                elif [ "$OPTION" == "Dead Air" ]; then
+                    MAP="c11m1_greenhouse"
+                elif [ "$OPTION" == "Blood Harvest" ]; then
+                    MAP="C12m1_hilltop"
+                elif [ "$OPTION" == "Cold Stream" ]; then
+                    MAP="c13m1_alpinecreek"
+                elif [ "$OPTION" == "Crash Course" ]; then
+                    MAP="c9m1_alleys"
+                fi
 
                 GAME="L4D2"
-                MS_DIR="/home/servers/master/left4dead2"
+                PORT=$PORT
+                MAP=$MAP
+                CLIENTPORT=$((PORT + 90))
+                MASTER_DIR="/home/servers/master/left4dead2"
+                GAMETYPE="left4dead2"
                 GS_DIR="/home/servers/servers/left4dead2/$FOLDER"
 
             elif [ "$OPTION" == "Left 4 Dead" ]; then
@@ -219,7 +268,13 @@ function getTask() {
                 echo "$FOLDERS"
 
                 GAME="L4D2"
-                MS_DIR="/home/servers/master/left4dead2"
+                PORT=$PORT
+                MAP=$MAP
+                CLIENTPORT=$((PORT + 90))
+                INSTALL_DIR="/home/servers/servers/left4dead2"
+
+                MASTER_DIR="/home/servers/master/left4dead2"
+                GAMETYPE="left4dead2"
                 GS_DIR="/home/servers/servers/left4dead2/$FOLDER"
 
             elif [ "$OPTION" == "Killing Floor 2" ]; then
@@ -238,13 +293,15 @@ function getTask() {
                 GS_DIR="/home/servers/servers/kf2/$FOLDER"
             fi
         fi
-
     fi
-    echo $MS_DIR
-    echo $APPID
+
+    ## Fire up the gameserver function
+    if [ $SUB_TASK == "GS" ] && [ $TASK = "INSTALLMS" ] || [ $TASK = "UPDATEMS" ] || [ $TASK = "REMOVEMS" ]; then
+        gsTasks $PORT $CLIENTPORT $MAP $GAME $MS_DIR $GS_DIR $GAMETYPE
+    fi
 
     ## Fire up the masterserver function
-    if [ $TASK = "INSTALLMS" ] || [ $TASK = "UPDATEMS" ] || [ $TASK = "REMOVEMS" ]; then
+    if [ $SUB_TASK == "MS" ] && [ $TASK = "INSTALLMS" ] || [ $TASK = "UPDATEMS" ] || [ $TASK = "REMOVEMS" ]; then
         masterServer $MS_DIR $APPID $GAME
     fi
 
