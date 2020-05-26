@@ -11,7 +11,7 @@ function gsTasks() {
     #    echo $MAP
     #    echo $CLIENTPORT
 
-    if [ "$TASK" = "INSTALL_GS" ]; then
+    if [ "$TASK" = "INSTALLGS" ]; then
         ## Check whether the folder exists
         if [ -d "$GS_DIR" ]; then
 
@@ -50,16 +50,53 @@ function gsTasks() {
             cp "$MS_DIR"/"$GAMETYPE"/cfg/server.cfg "$GS_DIR"/"$GAMETYPE"/cfg
             cp "$MS_DIR"/"$GAMETYPE"/cfg/autoexec.cfg "$GS_DIR"/"$GAMETYPE"/cfg
         fi
+    elif [ "$TASK" = "UPDATEGS" ]; then
+        ## Check whether the folder exists
+        if [ -d "$GS_DIR" ]; then
+
+            echo "Directory Exists"
+            rm -R "$GS_DIR"
+            mkdir -p "$GS_DIR"
+        fi
+
+        echo "We are about to create a gameserver for: $GAME"
+        echo "Server will be running on port: $PORT"
+        echo "Server will be running on Clientport: $CLIENTPORT"
+        echo "Server will be running map: $MAP"
+
+        if [ "$GAME" == "L4D" ] || [ "$GAME" == "L4D2" ]; then
+            cp -rsau "$MS_DIR"/* "$GS_DIR"
+            unlink "$GS_DIR"/srcds_run
+            unlink "$GS_DIR"/control.sh
+            unlink "$GS_DIR"/"$GAMETYPE"/host.txt
+            unlink "$GS_DIR"/"$GAMETYPE"/modelsounds.cache
+            unlink "$GS_DIR"/"$GAMETYPE"/motd.txt
+            unlink "$GS_DIR"/"$GAMETYPE"/scene.cache
+            if [ "$GAME" = "L4D2" ]; then
+                unlink "$GS_DIR"/"$GAMETYPE"/cfg/addonconfig.cfg
+            fi
+            unlink "$GS_DIR"/"$GAMETYPE"/cfg/server.cfg
+            unlink "$GS_DIR"/"$GAMETYPE"/cfg/autoexec.cfg
+            cp "$MS_DIR"/srcds_run "$GS_DIR"
+            cp "$MS_DIR"/control.sh "$GS_DIR"
+            cp "$MS_DIR"/"$GAMETYPE"/host.txt "$GS_DIR"/"$GAMETYPE"
+            cp "$MS_DIR"/"$GAMETYPE"/modelsounds.cache "$GS_DIR"/"$GAMETYPE"
+            cp "$MS_DIR"/"$GAMETYPE"/motd.txt "$GS_DIR"/"$GAMETYPE"
+            cp "$MS_DIR"/"$GAMETYPE"/scene.cache "$GS_DIR"/"$GAMETYPE"
+            if [ "$GAME" = "L4D2" ]; then
+                cp "$MS_DIR"/"$GAMETYPE"/cfg/addonconfig.cfg "$GS_DIR"/"$GAMETYPE"/cfg
+            fi
+            cp "$MS_DIR"/"$GAMETYPE"/cfg/server.cfg "$GS_DIR"/"$GAMETYPE"/cfg
+            cp "$MS_DIR"/"$GAMETYPE"/cfg/autoexec.cfg "$GS_DIR"/"$GAMETYPE"/cfg    
 
         ## Now we will use SED to configure control.sh and srcds_run
-
-        sed -i '/export LD_LIBRARY_PATH=".:bin:$LD_LIBRARY_PATH"/c\export LD_LIBRARY_PATH='"$INSTALL_DIR"'/'"$PORT"':'"$INSTALL_DIR"'/'"$PORT"'/bin.:bin:$LD_LIBRARY_PATH"' $INSTALL_DIR/$PORT/srcds_run
-        sed -i '/PARAMS="-game left4dead2 +ip $IP -port $PORT +clientport $CLIENTPORT +map $MAP -nohltv -strictportbind -debug -condebug -console"/c\PARAMS="-game left4dead2 +ip '"$IP"' -port '"$PORT"' +clientport '"$CLIENTPORT"' +map '"$MAP"' -nohltv -strictportbind -debug -condebug -console"' $INSTALL_DIR/$PORT/control.sh
-        sed -i '/DIR=/home/servers/servers/left4dead2/$PORT/c\DIR=/home/servers/servers/left4dead2/'"$PORT"'' $INSTALL_DIR/$PORT/control.sh
-        sed 's/PORT=/PORT=$PORT/' $INSTALL_DIR/$PORT/control.sh
-        sed 's/CLIENTPORT=/CLIENTPORT=$CLIENTPORT/' $INSTALL_DIR/$PORT/control.sh
-        sed 's/MAP=/MAP=$MAP/' $INSTALL_DIR/$PORT/control.sh
-        sed 's/NAME=/NAME=L4D2_$PORT/' $INSTALL_DIR/$PORT/control.sh
+        sed -i '/export LD_LIBRARY_PATH=".:bin:$LD_LIBRARY_PATH"/c\export LD_LIBRARY_PATH='"$GS_DIR"':'"$GS_DIR"'/bin.:bin:$LD_LIBRARY_PATH"' $GS_DIR/srcds_run
+        #sed -i '/PARAMS="-game left4dead2 +ip $IP -port $PORT +clientport $CLIENTPORT +map $MAP -nohltv -strictportbind -debug -condebug -console"/c\PARAMS="-game left4dead2 +ip '"$IP"' -port '"$PORT"' +clientport '"$CLIENTPORT"' +map '"$MAP"' -nohltv -strictportbind -debug -condebug -console"' $INSTALL_DIR/$PORT/control.sh
+        sed -i '/DIR=/home/servers/servers/left4dead2/$PORT/c\DIR=/home/servers/servers/left4dead2/'"$PORT"'' $GS_DIR/control.sh
+        sed 's/PORT=/PORT='"$PORT"'/' $GS_DIR/control.sh
+        sed 's/CLIENTPORT=/CLIENTPORT='"$CLIENTPORT"'/' $GS_DIR/control.sh
+        sed 's/MAP=/MAP='"$MAP"'/' $GS_DIR/control.sh
+        sed 's/NAME=/NAME=L4D2_'"$PORT"'/' $GS_DIR/control.sh
 
         exit 0
 
@@ -185,14 +222,13 @@ function getTask() {
                     break
                 done
 
-                readarray -t L4D2_PORTS < <(seq 27015 1 27035)
-                select PORT in "${L4D2_PORTS[@]}"; do
-                    break
-                done
-                if [ "$PORT" == "$FOLDERS" ]; then
-                    echo "Server already exists"
-                    echo " Please choose another port"
-                    return
+                if [ "$FOLDER" != "" ] || [ "$FOLDERS" != "" ]; then
+                    echo " It appears you already have servers installed"
+                else
+                    readarray -t L4D2_PORTS < <(seq 27015 1 27035)
+                    select PORT in "${L4D2_PORTS[@]}"; do
+                        break
+                    done
                 fi
 
                 ## Choose a map for when we install the server
@@ -233,6 +269,143 @@ function getTask() {
                 elif [ "$OPTION" == "Crash Course" ]; then
                     MAP="c9m1_alleys"
                 fi
+
+                GAME="L4D2"
+                PORT=$PORT
+                MAP=$MAP
+                CLIENTPORT=$((PORT + 90))
+                MS_DIR="/home/servers/master/left4dead2"
+                GAMETYPE="left4dead2"
+                GS_DIR="/home/servers/servers/left4dead2/$FOLDER"
+
+            elif [ "$OPTION" == "Left 4 Dead" ]; then
+                ## Lets see if theres are any L4D2 servers installed already
+                GS_DIR="/home/servers/servers/left4dead/$FOLDER"
+                INSTALL_DIR="/home/servers/servers/left4dead"
+                FOLDERS=$(find $INSTALL_DIR -maxdepth 1 -type d | cut -d"/" -f6-)
+                PS3="Which server(s) would you like to Remove?: "
+                select FOLDER in ${FOLDERS} "All" "Quit"; do
+                    #echo "${FOLDER}"
+                    #echo $FOLDERS
+                    break
+                done
+
+                if [ "$FOLDER" != "" ] || [ "$FOLDERS" != "" ]; then
+                    echo " It appears you already have servers installed"
+                else
+                    readarray -t L4D_PORTS < <(seq 28015 1 28035)
+                    select PORT in "${L4D_PORTS[@]}"; do
+                        break
+                    done
+                fi
+
+                GAME="L4D"
+                PORT=$PORT
+                MAP=$MAP
+                CLIENTPORT=$((PORT + 90))
+                INSTALL_DIR="/home/servers/servers/left4dead"
+
+                MS_DIR="/home/servers/master/left4dead"
+                GAMETYPE="left4dead"
+                GS_DIR="/home/servers/servers/left4dead/$FOLDER"
+
+            elif [ "$OPTION" == "Killing Floor 2" ]; then
+                ## Lets see if theres are any KF2 servers installed already
+                GS_DIR="/home/servers/servers/kf2/$FOLDER"
+                INSTALL_DIR="/home/servers/servers/kf2"
+                FOLDERS=$(find $INSTALL_DIR -maxdepth 1 -type d | cut -d"/" -f6-)
+                PS3="Which server(s) would you like to Remove?: "
+                select FOLDER in ${FOLDERS} "All" "Quit"; do
+                    #echo "${FOLDER}"
+                    #echo $FOLDERS
+                    break
+                done
+                GAME="KF2"
+                MS_DIR="/home/servers/master/kf2"
+                GS_DIR="/home/servers/servers/kf2/$FOLDER"
+            fi
+        fi
+    fi
+
+    ## Fire up the gameserver function
+    if [ $SUB_TASK == "GS" ] && [ $TASK = "INSTALLGS" ] || [ $TASK = "UPDATEGS" ] || [ $TASK = "REMOVEGS" ]; then
+        gsTasks $PORT $CLIENTPORT $MAP $GAME $MS_DIR $GS_DIR $GAMETYPE
+    fi
+
+    ## Fire up the masterserver function
+    if [ $SUB_TASK == "MS" ] && [ $TASK = "INSTALLMS" ] || [ $TASK = "UPDATEMS" ] || [ $TASK = "REMOVEMS" ]; then
+        masterServer $MS_DIR $APPID $GAME
+    fi
+
+    ###**********************************************###
+    ###******** THIS IS THE UPDATE SECTION *********###
+    ## lets find out what the user wants to update
+    if [ "$OPTION" == "Update" ]; then
+        ACTION="UPDATE"
+        OPTIONS=("Gameserver" "Masterserver" "Mods" "Maps" "Quit")
+        select OPTION in "${OPTIONS[@]}"; do
+            case "$REPLY" in
+            1 | 2 | 3 | 4) break ;;
+            5) errorAndQuit ;;
+            *) errorAndContinue ;;
+            esac
+        done
+        if [ "$OPTION" == "Gameserver" ]; then
+            SUB_TASK="GS"
+        elif [ "$OPTION" == "Masterserver" ]; then
+            SUB_TASK="MS"
+        elif [ "$OPTION" == "Mods" ]; then
+            SUB_TASK="MODS"
+        elif [ "$OPTION" == "Maps" ]; then
+            SUB_TASK="MODS"
+        fi
+        TASK=$ACTION$SUB_TASK
+
+        if [ $SUB_TASK == "MS" ]; then
+            ## If user wants to update a master server
+            ## lets find out which masterserver to update
+            OPTIONS=("Left 4 Dead 2" "Left 4 Dead" "Killing Floor 2" "Quit")
+            select OPTION in "${OPTIONS[@]}"; do
+                case "$REPLY" in
+                1 | 2 | 3 | 4) break ;;
+                5) errorAndQuit ;;
+                *) errorAndContinue ;;
+                esac
+            done
+            if [ "$OPTION" == "Left 4 Dead 2" ]; then
+                GAME="L4D2"
+                MS_DIR="/home/servers/master/left4dead2"
+                APPID="222860"
+            elif [ "$OPTION" == "Left 4 Dead" ]; then
+                GAME="L4D"
+                MS_DIR="/home/servers/master/left4dead"
+                APPID="222840"
+            elif [ "$OPTION" == "Killing Floor 2" ]; then
+                GAME="KF2"
+                MS_DIR="/home/servers/master/kf2"
+                APPID="232130"
+            fi
+
+        elif [ $SUB_TASK == "GS" ]; then
+            OPTIONS=("Left 4 Dead 2" "Left 4 Dead" "Killing Floor 2" "Quit")
+            select OPTION in "${OPTIONS[@]}"; do
+                case "$REPLY" in
+                1 | 2 | 3 | 4) break ;;
+                5) errorAndQuit ;;
+                *) errorAndContinue ;;
+                esac
+            done
+            if [ "$OPTION" == "Left 4 Dead 2" ]; then
+                ## Lets see if theres are any L4D2 servers installed already
+                GS_DIR="/home/servers/servers/left4dead2/$FOLDER"
+                INSTALL_DIR="/home/servers/servers/left4dead2"
+                FOLDERS=$(find $INSTALL_DIR -maxdepth 1 -type d | cut -d"/" -f6-)
+                PS3="Choose a port?: "
+                select FOLDER in ${FOLDERS} "All" "Quit"; do
+                    #echo "${FOLDER}"
+                    #echo $FOLDERS
+                    break
+                done
 
                 GAME="L4D2"
                 PORT=$PORT
@@ -292,95 +465,6 @@ function getTask() {
                 MS_DIR="/home/servers/master/kf2"
                 GS_DIR="/home/servers/servers/kf2/$FOLDER"
             fi
-        fi
-    fi
-
-    ## Fire up the gameserver function
-    if [ $SUB_TASK == "GS" ] && [ $TASK = "INSTALLMS" ] || [ $TASK = "UPDATEMS" ] || [ $TASK = "REMOVEMS" ]; then
-        gsTasks $PORT $CLIENTPORT $MAP $GAME $MS_DIR $GS_DIR $GAMETYPE
-    fi
-
-    ## Fire up the masterserver function
-    if [ $SUB_TASK == "MS" ] && [ $TASK = "INSTALLMS" ] || [ $TASK = "UPDATEMS" ] || [ $TASK = "REMOVEMS" ]; then
-        masterServer $MS_DIR $APPID $GAME
-    fi
-
-    ###**********************************************###
-    ###******** THIS IS THE UPDATE SECTION *********###
-    ## lets find out what the user wants to update
-    if [ "$OPTION" == "Update" ]; then
-        ACTION="UPDATE"
-        OPTIONS=("Gameserver" "Masterserver" "Mods" "Maps" "Quit")
-        select OPTION in "${OPTIONS[@]}"; do
-            case "$REPLY" in
-            1 | 2 | 3 | 4) break ;;
-            5) errorAndQuit ;;
-            *) errorAndContinue ;;
-            esac
-        done
-        if [ "$OPTION" == "Gameserver" ]; then
-            SUB_TASK="GS"
-        elif [ "$OPTION" == "Masterserver" ]; then
-            SUB_TASK="MS"
-        elif [ "$OPTION" == "Mods" ]; then
-            SUB_TASK="MODS"
-        elif [ "$OPTION" == "Maps" ]; then
-            SUB_TASK="MODS"
-        fi
-        TASK=$ACTION$SUB_TASK
-
-        if [ $SUB_TASK == "MS" ]; then
-            ## If user wants to install a master server
-            ## lets find out which masterserver to install
-            OPTIONS=("Left 4 Dead 2" "Left 4 Dead" "Killing Floor 2" "Quit")
-            select OPTION in "${OPTIONS[@]}"; do
-                case "$REPLY" in
-                1 | 2 | 3 | 4) break ;;
-                5) errorAndQuit ;;
-                *) errorAndContinue ;;
-                esac
-            done
-            if [ "$OPTION" == "Left 4 Dead 2" ]; then
-                GAME="L4D2"
-                MS_DIR="/home/servers/master/left4dead2"
-                APPID="222860"
-            elif [ "$OPTION" == "Left 4 Dead" ]; then
-                GAME="L4D"
-                MS_DIR="/home/servers/master/left4dead"
-                APPID="222840"
-            elif [ "$OPTION" == "Killing Floor 2" ]; then
-                GAME="KF2"
-                MS_DIR="/home/servers/master/kf2"
-                APPID="232130"
-                masterServer $MS_DIR $APPID $GAME
-            fi
-
-        elif [ $SUB_TASK == "GS" ]; then
-            OPTIONS=("Left 4 Dead 2" "Left 4 Dead" "Killing Floor 2" "Quit")
-            select OPTION in "${OPTIONS[@]}"; do
-                case "$REPLY" in
-                1 | 2 | 3 | 4) break ;;
-                5) errorAndQuit ;;
-                *) errorAndContinue ;;
-                esac
-            done
-            if [ "$OPTION" == "Left 4 Dead 2" ]; then
-                ## Lets see if theres are any L4D2 seerver installed before we try and remove them
-                GS_DIR="/home/servers/servers/left4dead2/$FOLDER"
-                INSTALL_DIR="/home/servers/servers/left4dead2"
-                FOLDERS=$(find $INSTALL_DIR -maxdepth 1 -type d | cut -d"/" -f6-)
-                PS3="Which server(s) would you like to Remove?: "
-                select FOLDER in ${FOLDERS} "All" "Quit"; do
-                    #echo "${FOLDER}"
-                    #echo $FOLDERS
-                    break
-                done
-                GAME="L4D2"
-                MS_DIR="/home/servers/master/left4dead2"
-                GS_DIR="/home/servers/servers/left4dead2/$FOLDER"
-
-            fi
-
         fi
     fi
 
@@ -457,24 +541,9 @@ function getTask() {
                 GAME="L4D2"
                 MS_DIR="/home/servers/master/left4dead2"
                 GS_DIR="/home/servers/servers/left4dead2/$FOLDER"
-                #echo $GS_DIR
-                ##if [ "$FOLDER" == "All" ]; then
-                ## User wants to remove all their L4D2 servers
-
-                # elif [ "$OPTION" == "Left 4 Dead" ]; then
-                #     GAME="L4D"
-                #     MS_DIR="/home/servers/master/left4dead"
-                # elif [ "$OPTION" == "Killing Floor 2" ]; then
-                #     GAME="KF2"
-                #     MS_DIR="/home/servers/master/kf2"
-                ##fi
-                echo "$GS_DIR"
-                # elif [ $TASK == "REMOVE_MODS" ]; then
-
-            fi # elif [ $TASK == "REMOVE_MAPS" ]; then
+            fi
         fi
     fi
 }
 
 getTask
-
