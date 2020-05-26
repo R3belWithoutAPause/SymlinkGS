@@ -87,20 +87,18 @@ function gsTasks() {
                 cp "$MS_DIR"/"$GAMETYPE"/cfg/addonconfig.cfg "$GS_DIR"/"$GAMETYPE"/cfg
             fi
             cp "$MS_DIR"/"$GAMETYPE"/cfg/server.cfg "$GS_DIR"/"$GAMETYPE"/cfg
-            cp "$MS_DIR"/"$GAMETYPE"/cfg/autoexec.cfg "$GS_DIR"/"$GAMETYPE"/cfg    
+            cp "$MS_DIR"/"$GAMETYPE"/cfg/autoexec.cfg "$GS_DIR"/"$GAMETYPE"/cfg
 
-        ## Now we will use SED to configure control.sh and srcds_run
-        sed -i '/export LD_LIBRARY_PATH=".:bin:$LD_LIBRARY_PATH"/c\export LD_LIBRARY_PATH='"$GS_DIR"':'"$GS_DIR"'/bin.:bin:$LD_LIBRARY_PATH"' $GS_DIR/srcds_run
-        #sed -i '/PARAMS="-game left4dead2 +ip $IP -port $PORT +clientport $CLIENTPORT +map $MAP -nohltv -strictportbind -debug -condebug -console"/c\PARAMS="-game left4dead2 +ip '"$IP"' -port '"$PORT"' +clientport '"$CLIENTPORT"' +map '"$MAP"' -nohltv -strictportbind -debug -condebug -console"' $INSTALL_DIR/$PORT/control.sh
-        sed -i '/DIR=/home/servers/servers/left4dead2/$PORT/c\DIR=/home/servers/servers/left4dead2/'"$PORT"'' $GS_DIR/control.sh
-        sed 's/PORT=/PORT='"$PORT"'/' $GS_DIR/control.sh
-        sed 's/CLIENTPORT=/CLIENTPORT='"$CLIENTPORT"'/' $GS_DIR/control.sh
-        sed 's/MAP=/MAP='"$MAP"'/' $GS_DIR/control.sh
-        sed 's/NAME=/NAME=L4D2_'"$PORT"'/' $GS_DIR/control.sh
-
+            ## Now we will use SED to configure control.sh and srcds_run
+            sed -i '/export LD_LIBRARY_PATH=".:bin:$LD_LIBRARY_PATH"/c\export LD_LIBRARY_PATH='"$GS_DIR"':'"$GS_DIR"'/bin.:bin:$LD_LIBRARY_PATH"' $GS_DIR/srcds_run
+            #sed -i '/PARAMS="-game left4dead2 +ip $IP -port $PORT +clientport $CLIENTPORT +map $MAP -nohltv -strictportbind -debug -condebug -console"/c\PARAMS="-game left4dead2 +ip '"$IP"' -port '"$PORT"' +clientport '"$CLIENTPORT"' +map '"$MAP"' -nohltv -strictportbind -debug -condebug -console"' $INSTALL_DIR/$PORT/control.sh
+            sed -i '/DIR=/home/servers/servers/left4dead2/$PORT/c\DIR=/home/servers/servers/left4dead2/'"$PORT"'' $GS_DIR/control.sh
+            sed 's/PORT=/PORT='"$PORT"'/' $GS_DIR/control.sh
+            sed 's/CLIENTPORT=/CLIENTPORT='"$CLIENTPORT"'/' $GS_DIR/control.sh
+            sed 's/MAP=/MAP='"$MAP"'/' $GS_DIR/control.sh
+            sed 's/NAME=/NAME=L4D2_'"$PORT"'/' $GS_DIR/control.sh
+        fi
         exit 0
-
-    ## Killing Floor 2 gameserver tasks here
 
     fi
 
