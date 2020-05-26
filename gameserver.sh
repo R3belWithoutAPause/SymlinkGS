@@ -210,21 +210,22 @@ function getTask() {
             echo ""
             if [ "$OPTION" == "Left 4 Dead 2" ]; then
                 ## Lets see if theres are any L4D2 servers installed already
-                GS_DIR="/home/servers/servers/left4dead2/$FOLDER"
+                #GS_DIR="/home/servers/servers/left4dead2/$FOLDER"
                 INSTALL_DIR="/home/servers/servers/left4dead2"
                 FOLDERS=$(find $INSTALL_DIR -maxdepth 1 -type d | cut -d"/" -f6-)
                 PS3="Choose a port?: "
-                select FOLDER in ${FOLDERS} "All" "Quit"; do
-                    #echo "${FOLDER}"
-                    #echo $FOLDERS
-                    break
-                done
-
-                if [ "$FOLDER" != "" ] || [ "$FOLDERS" != "" ]; then
-                    echo " It appears you already have servers installed"
-                else
+                if [ "$FOLDER" == "" ] || [ "$FOLDERS" == "" ]; then
+                    
                     readarray -t L4D2_PORTS < <(seq 27015 1 27035)
-                    select PORT in "${L4D2_PORTS[@]}"; do
+                        select PORT in "${L4D2_PORTS[@]}"; do
+                            break
+                        done
+                
+                elif [ "$FOLDER" != "" ] || [ "$FOLDERS" != "" ]; then
+                    echo " It appears you already have servers installed"
+                        select FOLDER in ${FOLDERS} "All" "Quit"; do
+                        #echo "${FOLDER}"
+                        #echo $FOLDERS
                         break
                     done
                 fi
