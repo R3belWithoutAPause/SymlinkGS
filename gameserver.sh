@@ -14,18 +14,10 @@ function gsTasks() {
     if [ "$TASK" = "INSTALL_GS" ]; then
         ## Check whether the folder exists
         if [ -d "$GS_DIR" ]; then
-            if [ -L "$GS_DIR" ]; then
-                # It is a symlink!
-                # Symbolic link specific commands go here.
-                echo "Symlinked directory exists !! ... Removing!"
-                rm -R "$GS_DIR"
-            else
-                # It's a directory!
-                # Directory command goes here.
-                echo "Directory Exists"
-                rm -R "$GS_DIR"
-                mkdir -p "$GS_DIR"
-            fi
+
+            echo "Directory Exists"
+            rm -R "$GS_DIR"
+            mkdir -p "$GS_DIR"
         fi
 
         echo "We are about to create a gameserver for: $GAME"
@@ -33,34 +25,35 @@ function gsTasks() {
         echo "Server will be running on Clientport: $CLIENTPORT"
         echo "Server will be running map: $MAP"
 
-        #INSTALL_DIR="/home/servers/servers/left4dead"
-        #GS_DIR=$GS_DIR
-        #MASTER_DIR="/home/servers/master/left4dead2"
 
-        cp -rsa "$MASTER_DIR"/* "$GS_DIR"
-        unlink "$GS_DIR"/srcds_run
-        unlink "$GS_DIR"/control.sh
-        unlink "$GS_DIR"/"$GAMETYPE"/host.txt
-        unlink "$GS_DIR"/"$GAMETYPE"/modelsounds.cache
-        unlink "$GS_DIR"/"$GAMETYPE"/motd.txt
-        unlink "$GS_DIR"/"$GAMETYPE"/scene.cache
-        if [ "$GAME" = "L4D2" ]; then
-            unlink "$GS_DIR"/"$GAMETYPE"/cfg/addonconfig.cfg
-        fi
-        unlink "$GS_DIR"/"$GAMETYPE"/cfg/server.cfg
-        unlink "$GS_DIR"/"$GAMETYPE"/cfg/autoexec.cfg
-        cp "$MASTER_DIR"/srcds_run "$GS_DIR"
-        cp "$MASTER_DIR"/control.sh "$GS_DIR"
-        cp "$MASTER_DIR"/"$GAMETYPE"/host.txt "$GS_DIR"/"$GAMETYPE"
-        cp "$MASTER_DIR"/"$GAMETYPE"/modelsounds.cache "$GS_DIR"/"$GAMETYPE"
-        cp "$MASTER_DIR"/"$GAMETYPE"/motd.txt "$GS_DIR"/"$GAMETYPE"
-        cp "$MASTER_DIR"/"$GAMETYPE"/scene.cache "$GS_DIR"/"$GAMETYPE"
-        if [ "$GAME" = "L4D2" ]; then
-            cp "$MASTER_DIR"/"$GAMETYPE"/cfg/addonconfig.cfg "$GS_DIR"/"$GAMETYPE"/cfg
-        fi
-        cp "$MASTER_DIR"/"$GAMETYPE"/cfg/server.cfg "$GS_DIR"/"$GAMETYPE"/cfg
-        cp "$MASTER_DIR"/"$GAMETYPE"/cfg/autoexec.cfg "$GS_DIR"/"$GAMETYPE"/cfg
+        if [ $GAME == "L4D" ] || [ $GAME == "L4D2" ]; then
+            cp -rsa "$MASTER_DIR"/* "$GS_DIR"
+            unlink "$GS_DIR"/srcds_run
+            unlink "$GS_DIR"/control.sh
+            unlink "$GS_DIR"/"$GAMETYPE"/host.txt
+            unlink "$GS_DIR"/"$GAMETYPE"/modelsounds.cache
+            unlink "$GS_DIR"/"$GAMETYPE"/motd.txt
+            unlink "$GS_DIR"/"$GAMETYPE"/scene.cache
+            if [ "$GAME" = "L4D2" ]; then
+                unlink "$GS_DIR"/"$GAMETYPE"/cfg/addonconfig.cfg
+            fi
+            unlink "$GS_DIR"/"$GAMETYPE"/cfg/server.cfg
+            unlink "$GS_DIR"/"$GAMETYPE"/cfg/autoexec.cfg
+            cp "$MASTER_DIR"/srcds_run "$GS_DIR"
+            cp "$MASTER_DIR"/control.sh "$GS_DIR"
+            cp "$MASTER_DIR"/"$GAMETYPE"/host.txt "$GS_DIR"/"$GAMETYPE"
+            cp "$MASTER_DIR"/"$GAMETYPE"/modelsounds.cache "$GS_DIR"/"$GAMETYPE"
+            cp "$MASTER_DIR"/"$GAMETYPE"/motd.txt "$GS_DIR"/"$GAMETYPE"
+            cp "$MASTER_DIR"/"$GAMETYPE"/scene.cache "$GS_DIR"/"$GAMETYPE"
+            if [ "$GAME" = "L4D2" ]; then
+                cp "$MASTER_DIR"/"$GAMETYPE"/cfg/addonconfig.cfg "$GS_DIR"/"$GAMETYPE"/cfg
+            fi
+            cp "$MASTER_DIR"/"$GAMETYPE"/cfg/server.cfg "$GS_DIR"/"$GAMETYPE"/cfg
+        fi    cp "$MASTER_DIR"/"$GAMETYPE"/cfg/autoexec.cfg "$GS_DIR"/"$GAMETYPE"/cfg
         exit 0
+
+    ## Killing Floor 2 gameserver tasks here
+    
     fi
 
 }
@@ -94,6 +87,7 @@ function masterServer() {
 
     ## Remove the relevant masterserver directory
     if [ "$TASK" = "REMOVEMS" ]; then
+        
         rm -R "$MS_DIR"
     fi
 }
@@ -156,7 +150,7 @@ function getTask() {
                 GAME="KF2"
                 MS_DIR="/home/servers/master/kf2"
                 APPID="232130"
-                masterServer $MS_DIR $APPID $GAME
+                #masterServer $MS_DIR $APPID $GAME
             fi
 
         elif [ $SUB_TASK == "GS" ]; then
@@ -214,7 +208,6 @@ function getTask() {
                 if [ "$FOLDER" != "" ] || [ "$FOLDERS" != "" ]; then
                     echo " It appears you already have servers installed"
                 else
-
                     readarray -t L4D_PORTS < <(seq 28015 1 28035)
                     select PORT in "${L4D_PORTS[@]}"; do
                         break
@@ -240,9 +233,9 @@ function getTask() {
                     #echo $FOLDERS
                     break
                 done
-                GAME="L4D2"
-                MS_DIR="/home/servers/master/left4dead2"
-                GS_DIR="/home/servers/servers/left4dead2/$FOLDER"
+                GAME="KF2"
+                MS_DIR="/home/servers/master/kf2"
+                GS_DIR="/home/servers/servers/kf2/$FOLDER"
             fi
         fi
 
@@ -381,7 +374,7 @@ function getTask() {
                 GAME="KF2"
                 MS_DIR="/home/servers/master/kf2"
                 APPID="232130"
-                masterServer $MS_DIR $APPID $GAME
+                masterServer $TASK $MS_DIR $APPID $GAME
             fi
 
         elif [ $SUB_TASK == "GS" ]; then
