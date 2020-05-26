@@ -212,25 +212,24 @@ function getTask() {
                 ## Lets see if theres are any L4D2 servers installed already
                 #GS_DIR="/home/servers/servers/left4dead2/$FOLDER"
                 INSTALL_DIR="/home/servers/servers/left4dead2"
-                FOLDERS=$(find $INSTALL_DIR -maxdepth 1 -type d | cut -d"/" -f6-)
-                PS3="Choose a port?: "
-                if [ "$FOLDER" == "" ] || [ "$FOLDERS" == "" ]; then
-                    
-                    readarray -t L4D2_PORTS < <(seq 27015 1 27035)
-                        select PORT in "${L4D2_PORTS[@]}"; do
-                            break
-                        done
-                
-                elif [ "$FOLDER" != "" ] || [ "$FOLDERS" != "" ]; then
+                if [ -d $INSTALL_DIR ]; then
+                    FOLDERS=$(find $INSTALL_DIR -maxdepth 1 -type d | cut -d"/" -f6-)
+                    PS3="Please choose a port: "
                     echo " It appears you already have servers installed"
-                        select FOLDER in ${FOLDERS} "All" "Quit"; do
-                        #echo "${FOLDER}"
-                        #echo $FOLDERS
+                    select FOLDER in ${FOLDERS} "All" "Quit"; do
+                        break
+                    done
+
+                elif [ "$FOLDER" == "" ] || [ "$FOLDERS" == "" ]; then
+                    PS3="Please choose a port: "
+                    readarray -t L4D2_PORTS < <(seq 27015 1 27035)
+                    select PORT in "${L4D2_PORTS[@]}"; do
                         break
                     done
                 fi
 
                 ## Choose a map for when we install the server
+                PS3="Please choose a map: "
                 OPTIONS=("Dead Center" "Dark Carnival" "Swamp Fever" "Hard Rain" "The Parish" "The Passing" "The Sacrifice" "No Mercy" "Death Toll" "Dead Air" "Blood Harvest" "Cold Stream" "Crash Course" "Quit")
                 select OPTION in "${OPTIONS[@]}"; do
                     case "$REPLY" in
